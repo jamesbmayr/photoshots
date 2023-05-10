@@ -1,0 +1,20 @@
+{
+  "name": "photoshots",
+  "version": "1.0.0",
+  "description": "photography hide and seek",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"test\"",
+    "start": "node index.js",
+    "mongo": "mongod --dbpath=data/db --port 27017"
+  },
+  "author": "James Mayr",
+  "license": "ISC",
+  "engines": {
+    "node": "12.18.4"
+  },
+  "dependencies": {
+    "mongodb": "^3.1.13",
+    "websocket": "^1.0.25"
+  }
+}
