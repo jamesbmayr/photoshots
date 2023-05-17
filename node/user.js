@@ -1,5 +1,6 @@
 /*** modules ***/
 	const CORE = require("../node/core")
+	const SESSION = require("../node/session")
 	module.exports = {}
 
 /*** constants ***/
@@ -12,7 +13,7 @@
 			try {
 				// validate
 					if (!REQUEST.post.name || !CONSTANTS.userNameRegex.test(REQUEST.post.name.trim())) {
-						callback({success: false, message: `name must be 8 - 16 numbers and letters`})
+						callback({success: false, message: `name must be 8 - 16 numbers, letters, and underscores`})
 						return
 					}
 					if (!REQUEST.post.password || !REQUEST.post.password.trim().length || !CONSTANTS.passwordRegex.test(REQUEST.post.password)) {
@@ -38,7 +39,7 @@
 								user.name = REQUEST.post.name.trim()
 							const {hash, salt} = CORE.hashRandom(REQUEST.post.password)
 								user.secret.salt = salt
-								user.secret.password = hash
+								user.secret.hash = hash
 
 						// query
 							const query = CORE.getSchema("query")
@@ -53,30 +54,109 @@
 									return
 								}
 
-								// user
+								// update session
 									const userId = results.documents[0].id
-
-								// query
-									const query = CORE.getSchema("query")
-										query.collection = "sessions"
-										query.command = "update"
-										query.filters = {id: REQUEST.session.id}
-										query.document = {
-											updated: new Date().getTime(),
-											userId: userId
-										}
-
-								// update
-									CORE.accessDatabase(query, results => {
-										if (!results.success) {
-											callback({success: false, message: `unable to update session`})
-											return
-										}
-
-										// refresh
-											callback({success: true, location: `/user/${userId}`})
-											return
+									const username = results.documents[0].name
+									REQUEST.updateSession = {userId}
+									SESSION.updateOne(REQUEST, null, () => {
+										callback({success: true, location: `/user/${username}`})
+										return
 									})
+							})
+					})
+			}
+			catch (error) {
+				CORE.logError(error)
+				callback({success: false, message: `unable to ${arguments.callee.name}`})
+			}
+		}
+
+/*** authenticates ***/
+	/* loginOne */
+		module.exports.loginOne = loginOne
+		function loginOne(REQUEST, callback) {
+			try {
+				// validate
+					if (!REQUEST.post.name || !CONSTANTS.userNameRegex.test(REQUEST.post.name.trim())) {
+						callback({success: false, message: `name must be 8 - 16 numbers, letters, and underscores`})
+						return
+					}
+					if (!REQUEST.post.password || !REQUEST.post.password.trim().length || !CONSTANTS.passwordRegex.test(REQUEST.post.password)) {
+						callback({success: false, message: `password must be 8 - 64 characters`})
+						return
+					}
+
+				// query
+					const query = CORE.getSchema("query")
+						query.collection = "users"
+						query.command = "find"
+						query.filters = {name: REQUEST.post.name.trim().toLowerCase()}
+
+				// find
+					CORE.accessDatabase(query, results => {
+						if (!results.success) {
+							callback({success: false, message: `unable to find user`})
+							return
+						}
+
+						// no previous password
+							const user = results.documents[0]
+							if (!user.secret || !user.secret.hash) {
+								callback({success: false, message: `incorrect password`})
+								return
+							}
+
+						// authenticate old password
+							const {hash, salt} = CORE.hashRandom(REQUEST.post.password, user.secret.salt)
+							if (hash !== user.secret.hash || salt !== user.secret.salt) {
+								callback({success: false, message: `incorrect password`})
+								return
+							}
+
+						// update session
+							const userId = results.documents[0].id
+							const username = results.documents[0].name
+							REQUEST.updateSession = {userId}
+							SESSION.updateOne(REQUEST, null, () => {
+								callback({success: true, location: `/user/${username}`})
+								return
+							})
+					})
+			}
+			catch (error) {
+				CORE.logError(error)
+				callback({success: false, message: `unable to ${arguments.callee.name}`})
+			}
+		}
+
+	/* logoutOne */
+		module.exports.logoutOne = logoutOne
+		function logoutOne(REQUEST, callback) {
+			try {
+				// validate
+					if (!REQUEST.session.userId) {
+						callback({success: false, message: `not logged in`})
+						return
+					}
+
+				// query
+					const query = CORE.getSchema("query")
+						query.collection = "users"
+						query.command = "find"
+						query.filters = {id: REQUEST.session.userId}
+
+				// find
+					CORE.accessDatabase(query, results => {
+						if (!results.success) {
+							callback({success: false, message: `unable to find user`})
+							return
+						}
+
+						// update session
+							REQUEST.updateSession = {userId: null, gameId: null}
+							SESSION.updateOne(REQUEST, null, () => {
+								callback({success: true, location: `/`})
+								return
 							})
 					})
 			}
@@ -92,8 +172,8 @@
 		function readOne(REQUEST, callback) {
 			try {
 				// validate
-					if (!REQUEST.post.userId || !CONSTANTS.userPathRegex.test(`/user/${REQUEST.post.userId}`)) {
-						callback({success: false, message: `invalid user id`})
+					if (!REQUEST.post.username || !CONSTANTS.userNameRegex.test(REQUEST.post.username)) {
+						callback({success: false, message: `invalid user name`})
 						return
 					}
 
@@ -101,7 +181,7 @@
 					const query = CORE.getSchema("query")
 						query.collection = "users"
 						query.command = "find"
-						query.filters = {id: REQUEST.post.userId}
+						query.filters = {name: REQUEST.post.username}
 
 				// find
 					CORE.accessDatabase(query, results => {
@@ -160,7 +240,7 @@
 			try {
 				// validate
 					if (!REQUEST.post.name || !CONSTANTS.userNameRegex.test(REQUEST.post.name.trim())) {
-						callback({success: false, message: `name must be 8 - 16 numbers and letters`})
+						callback({success: false, message: `name must be 8 - 16 numbers, letters, and underscores`})
 						return
 					}
 
@@ -168,7 +248,7 @@
 					const query = CORE.getSchema("query")
 						query.collection = "users"
 						query.command = "find"
-						query.filters = {name: REQUEST.post.name.trim().toLowercase()}
+						query.filters = {name: REQUEST.post.name.trim().toLowerCase()}
 
 				// find
 					CORE.accessDatabase(query, results => {
@@ -199,7 +279,7 @@
 									delete user.secret
 
 								// respond
-									callback({success: true, message: `name updated to ${user.name}`, user: user})
+									callback({success: true, message: `name updated to ${user.name}`, location: `/user/${user.name}`})
 							})
 					})
 			}
@@ -242,20 +322,20 @@
 
 						// no previous password
 							const user = results.documents[0]
-							if (!user.secret || !user.secret.password) {
+							if (!user.secret || !user.secret.hash) {
 								callback({success: false, message: `incorrect password`})
 								return
 							}
 
 						// authenticate old password
-							const {oldHash, oldSalt} = CORE.hashRandom(oldPassword, user.secret.salt)
-							if (oldHash !== user.secret.password || oldSalt !== user.secret.salt) {
+							const oldHashAndSalt = CORE.hashRandom(oldPassword, user.secret.salt)
+							if (oldHashAndSalt.hash !== user.secret.hash || oldHashAndSalt.salt !== user.secret.salt) {
 								callback({success: false, message: `incorrect password`})
 								return
 							}
 
 						// hash new password
-							const {newHash, newSalt} = CORE.hashRandom(newPassword)
+							const {hash, salt} = CORE.hashRandom(newPassword)
 
 						// query
 							const query = CORE.getSchema("query")
@@ -264,8 +344,8 @@
 								query.filters = {id: user.id}
 								query.document = {
 									updated: new Date().getTime(),
-									"secret.salt": newSalt,
-									"secret.password": newHash
+									"secret.salt": salt,
+									"secret.hash": hash
 								}
 
 						// update
@@ -319,14 +399,14 @@
 
 						// no password
 							const user = results.documents[0]
-							if (!user.secret || !user.secret.password) {
+							if (!user.secret || !user.secret.hash) {
 								callback({success: false, message: `incorrect password`})
 								return
 							}
 
 						// authenticate old password
 							const {hash, salt} = CORE.hashRandom(REQUEST.post.password, user.secret.salt)
-							if (hash !== user.secret.password || salt !== user.secret.salt) {
+							if (hash !== user.secret.hash || salt !== user.secret.salt) {
 								callback({success: false, message: `incorrect password`})
 								return
 							}
@@ -344,36 +424,14 @@
 									return
 								}
 
-								// query
-									const query = CORE.getSchema("query")
-										query.collection = "sessions"
-										query.command = "update"
-										query.filters = {id: REQUEST.session.id}
-										query.document = {
-											updated: new Date().getTime(),
-											userId: null,
-											gameId: null
-										}
-
-								// update
-									CORE.accessDatabase(query, results => {
-										if (!results.success) {
-											callback({success: false, message: `unable to update session`})
-											return
-										}
-
-										// refresh
-											callback({success: true, location: `/`})
-										
-										// in a game --> leave
-											if (user.gameId) {
-												// ???
-											}
+								// update session
+									REQUEST.updateSession = {userId: null, gameId: null}
+									SESSION.updateOne(REQUEST, null, () => {
+										callback({success: true, location: `/`})
+										return
 									})
-
 							})
 					})
-
 			}
 			catch (error) {
 				CORE.logError(error)

@@ -79,7 +79,7 @@
 								case (/^\/ping\/?$/).test(REQUEST.url):
 									try {
 										RESPONSE.writeHead(200, {"Content-Type": `application/json`})
-										RESPONSE.end(JSON.stringify({success: true, timestamp: new Date().getTime()})©)
+										RESPONSE.end(JSON.stringify({success: true, timestamp: new Date().getTime()}))
 									}
 									catch (error) {_403(error)}
 								break
@@ -190,11 +190,12 @@
 								case (CONSTANTS.userPathRegex).test(REQUEST.url):
 									try {
 										// find user
-											const userId = REQUEST.path[REQUEST.path.length - 1]
-											REQUEST.post = {userId: userId}
+											const username = REQUEST.path[REQUEST.path.length - 1]
+											REQUEST.post = {username}
 											USER.readOne(REQUEST, data => {
 												if (!data.success) {
-													_404(REQUEST, RESPONSE, `user ${userId} not found`)
+													_404(REQUEST, RESPONSE, `user ${username} not found`)
+													return
 												}
 
 												REQUEST.user = data.user
@@ -234,7 +235,7 @@
 				// post
 					else if (REQUEST.method == "POST" && REQUEST.post.action) {
 						switch (REQUEST.post.action) {
-							// home
+							// user
 								// createUser
 									case "createUser":
 										try {
@@ -246,23 +247,22 @@
 										catch (error) {_403(REQUEST, RESPONSE, error)}
 									break
 
-								// logInUser
-									case "logInUser":
+								// loginUser
+									case "loginUser":
 										try {
 											RESPONSE.writeHead(200, CORE.constructHeaders(REQUEST))
-											USER.logIn(REQUEST, data => {
+											USER.loginOne(REQUEST, data => {
 												RESPONSE.end(JSON.stringify(data))
 											})
 										}
 										catch (error) {_403(REQUEST, RESPONSE, error)}
 									break
 
-							// user
-								// logOutUser
-									case "logOutUser":
+								// logoutUser
+									case "logoutUser":
 										try {
 											RESPONSE.writeHead(200, CORE.constructHeaders(REQUEST))
-											USER.logOut(REQUEST, data => {
+											USER.logoutOne(REQUEST, data => {
 												RESPONSE.end(JSON.stringify(data))
 											})
 										}
@@ -270,7 +270,8 @@
 									break
 
 								// updateUser
-									case "updateUser":
+									case "updateUserName":
+									case "updateUserPassword":
 										try {
 											RESPONSE.writeHead(200, CORE.constructHeaders(REQUEST))
 											USER.updateOne(REQUEST, data => {
@@ -280,6 +281,7 @@
 										catch (error) {_403(REQUEST, RESPONSE, error)}
 									break
 
+							// game
 								// createGame
 									case "createGame":
 										try {

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title><script node>getAsset("title")</script node></title>
+		<script node>getAsset("logo")</script node>
+		<script node>getAsset("meta")</script node>
+		<script node>getAsset("fonts")</script node>
+		<script node>getAsset("css-variables")</script node>
+		<link rel="stylesheet" href="home.css"/>
+		<script src="home.js" defer></script>
+	</head>
+	<body>
+		<script node>
+			if (REQUEST.session.userId) {
+				`<button id="logout-user-button">logout</button>`
+			}
+		</script node>
+		<div id="container">
+			<h1>PhotoShots</h1>
+			<label id="actions">
+				<script node>
+					if (REQUEST.session.userId) {
+						`<button id="join-camera-button">scan code</button>` +
+						`<input id="join-gameid-input" type="text" placeholder="game code">` +
+						`<button id="join-game-button">join game</button>` +
+						`<button id="create-game-button">new game</button>`
+					}
+					else {
+						`<input id="login-username-input" type="text" placeholder="username">` +
+						`<input id="login-password-input" type="password" placeholder="password">` + 
+						`<button id="login-user-button">log in</button>` +
+						`<button id="create-user-button">sign up</button>`
+					}
+				</script node>
+			</label>
+		</div>
+	</body>
+</html>

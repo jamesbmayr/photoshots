@@ -150,7 +150,7 @@
 								query.filters = {id: REQUEST.session.userId}
 								query.document = {
 									updated: new Date().getTime(),
-									`players.${player.userId}`: player
+									[`players.${player.userId}`]: player
 								}
 
 						// update

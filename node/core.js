@@ -12,7 +12,7 @@
 		module.exports.logError = logError
 		function logError(error) {
 			if (ENVIRONMENT.debug) {
-				console.log(`\n***ERROR @ ${new Date().toLocaleString()} ***`)
+				console.log(`\n*** ERROR @ ${new Date().toLocaleString()} ***`)
 				console.log(` - ${error}`)
 				console.dir(arguments)
 			}
@@ -241,12 +241,12 @@
 								updated:      new Date().getTime(),
 								name:         "",
 								secret: {
-									salt:     generateRandom({set: CONSTANTS.saltSet, length: CONSTANTS.saltLength}),
-									password: ""
+									salt:     null,
+									hash:     ""
 								},
 								gameId:       null,
-								gamesPlayed:  {},
-								allTime: {
+								games:        {},
+								stats: {
 									shots:    0,
 									stuns:    0,
 									saves:    0,
@@ -363,10 +363,11 @@
 								}
 
 							// fonts
-								const fonts = getAsset("fonts").slice(fonts.indexOf("family=") + 7, fonts.indexOf("&display=")).split("|")
-								for (const i in fonts) {
-									const font = fonts[i].replace(/\+/i, " ").split(":")[0]
-									cssVariables.push(`--font-${i}: "${font}", sans-serif;`)
+								const fontString = getAsset("fonts")
+								const fontNames = fontString.slice(fontString.indexOf("family=") + "family=".length, fontString.indexOf("&display=")).split("|")
+								for (const index in fontNames) {
+									const font = fontNames[index].replace(/\+/g, " ").split(":")[0]
+									cssVariables.push(`--font-${index}: "${font}", sans-serif;`)
 								}
 
 							// return
@@ -409,14 +410,12 @@
 					// constants
 						case "constants":
 							return {
-								userPathRegex: /^\/user\/[a-z]{8}$/g,
-								userNameRegex: /^[a-zA-Z0-9]{8,16}$/g,
-								passwordRegex: /^.{8,64}$/g,
-								gamePathRegex: /^\/game\/[a-z]{8}$/g,
+								userPathRegex: /^\/user\/[a-zA-Z0-9_]{8,16}$/,
+								userNameRegex: /^[a-zA-Z0-9_]{8,16}$/,
+								passwordRegex: /^.{8,64}$/,
+								gamePathRegex: /^\/game\/[a-z]{8}$/,
 								idSet: "abcdefghijklmnopqrstuvwxyz",
 								idLength: 8,
-								saltSet: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-								saltLength: 64,
 								minPlayers: 3,
 								maxPlayers: 16
 							}
@@ -430,7 +429,7 @@
 			}
 			catch (error) {
 				logError(error)
-				return false
+				return null
 			}
 		}
 
@@ -448,7 +447,7 @@
 					}
 
 					html.original = file
-					html.array = html.original.split(/<script\snode>|<\/script>node>/gi)
+					html.array = html.original.split(/<script\snode>|<\/script\snode>/gi)
 
 					for (html.count = 1; html.count < html.array.length; html.count += 2) {
 						try {
@@ -517,11 +516,23 @@
 		module.exports.chooseRandom = chooseRandom
 		function chooseRandom(list) {
 			try {
-				if (!Array.isArray(list)) {
-					return list
-				}
+				// array
+					if (Array.isArray(list)) {
+						return list[Math.floor(Math.random() * list.length)]	
+					}
 
-				return list[Math.floor(Math.random() * list.length)]
+				// object
+					if (typeof list == "object") {
+						return list[chooseRandom(Object.keys(list))]
+					}
+
+				// string
+					if (typeof list == "string") {
+						return chooseRandom(list.split(""))
+					}
+
+				// other
+					return list
 			}
 			catch (error) {
 				logError(error)
@@ -632,8 +643,8 @@
 
 				// log
 					logMessage(`db:${query.command} ${query.collection}` + 
-						(query.filters  ? `\n   >${JSON.stringify(query.filters) }` : "") +
-						(query.document ? `\n   >${Object.keys(query.document).join(", ")}` : ""))
+						(query.filters  ? `\n   > ${JSON.stringify(query.filters) }` : "") +
+						(query.document ? `\n   > ${Object.keys(query.document).join(", ")}` : ""))
 
 				// go to Mongo
 					if (ENVIRONMENT.db_url) {
@@ -722,7 +733,7 @@
 										level++
 									}
 									
-									if (query.document[pathString] === null) {
+									if (query.document[pathString] === undefined) {
 										delete subdocument[pathList[level]]
 									}
 									else {
@@ -900,7 +911,7 @@
 									const unsets = {}
 									for (const key of updateKeys) {
 										const value = query.document[key]
-										if (value === null) {
+										if (value === undefined) {
 											unsets[key] = null
 										}
 										else {

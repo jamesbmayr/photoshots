@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title><script node>getAsset("title")</script node></title>
+		<script node>getAsset("logo")</script node>
+		<script node>getAsset("meta")</script node>
+		<script node>getAsset("fonts")</script node>
+		<script node>getAsset("css-variables")</script node>
+		<link rel="stylesheet" href="user.css"/>
+		<script src="user.js" defer></script>
+	</head>
+	<body>
+		<a id="home" href="/">home</a>
+		<script node>
+			if (REQUEST.session.userId) {
+				`<button id="logout-user-button">logout</button>`
+			}
+		</script node>
+		<div id="container">
+			<h1><script node>REQUEST.user.name</script node></h1>
+			<script node>
+				if (REQUEST.session.userId && REQUEST.user.id == REQUEST.session.userId) {
+					`<input id="update-username-input" type="text" placeholder="username">` +
+					`<button id="update-username-button">update name</button>` +
+					`<input id="old-password-input" type="password" placeholder="old password">` + 
+					`<input id="new-password-input" type="password" placeholder="new password">` + 
+					`<button id="update-password-button">update password</button>`
+				}
+			</script node>
+			<div id="all-time">
+				<h2>All Time Stats</h2>
+				<script node>
+					`<div class="stat">` +
+						`<span>shots</span>` +
+						`<span>${REQUEST.user.stats.shots}<span>` +
+					`</div>` +
+					`<div class="stat">` +
+						`<span>stuns</span>` +
+						`<span>${REQUEST.user.stats.stuns}<span>` +
+					`</div>` +
+					`<div class="stat">` +
+						`<span>saves</span>` +
+						`<span>${REQUEST.user.stats.saves}<span>` +
+					`</div>` +
+					`<div class="stat">` +
+						`<span>time in</span>` +
+						`<span>${REQUEST.user.stats.timeIn}<span>` +
+					`</div>` +
+					`<div class="stat">` +
+						`<span>time out</span>` +
+						`<span>${REQUEST.user.stats.timeOut}<span>` +
+					`</div>` +
+					`<div class="stat">` +
+						`<span>wins</span>` +
+						`<span>${REQUEST.user.stats.wins}<span>` +
+					`</div>` +
+					`<div class="stat">` +
+						`<span>losses</span>` +
+						`<span>${REQUEST.user.stats.losses}<span>` +
+					`</div>`
+				</script node>
+			</div>
+			<div id="game-history">
+				<h2>Game History</h2>
+				<script node>
+					if (!REQUEST.user.games.length) {
+						`<div class="empty">no games</div>`
+					}
+					else {
+						REQUEST.user.games.map(game => {
+							`<div class="game">` +
+								`<h3>${game.id}</h3>` +
+								`<h4>${new Date(game.timeStart).toLocaleString()}</h4>` +
+								`<div class="stat">` +
+									`<span>shots</span>` +
+									`<span>${game.players[REQUEST.user.id].shots}<span>` +
+								`</div>` +
+								`<div class="stat">` +
+									`<span>stuns</span>` +
+									`<span>${game.players[REQUEST.user.id].stuns}<span>` +
+								`</div>` +
+								`<div class="stat">` +
+									`<span>saves</span>` +
+									`<span>${game.players[REQUEST.user.id].saves}<span>` +
+								`</div>` +
+								`<div class="stat">` +
+									`<span>time in</span>` +
+									`<span>${game.players[REQUEST.user.id].timeIn}<span>` +
+								`</div>` +
+								`<div class="stat">` +
+									`<span>time out</span>` +
+									`<span>${game.players[REQUEST.user.id].timeOut}<span>` +
+								`</div>` +
+								`<div class="stat">` +
+									`<span>final</span>` +
+									`<span>${game.players[REQUEST.user.id].win ? "win" : 
+											game.players[REQUEST.user.id].loss ? "loss" : 
+											"tie"}<span>` +
+								`</div>` +
+							`</div>`
+						}).join('\n')
+					}
+				</script node>
+			</div>
+		</div>
+	</body>
+</html>
