@@ -1,0 +1,22 @@
+
+/*** print ***/
+	@media print {
+		body * {
+			display: none;
+		}
+
+		#container, #qr-code, #qrcode-container, #qrcode-container img {
+			display: block !important;
+		}
+
+		#qrcode-container img {
+			position: absolute;
+			width: 100vw;
+			height: 100vw;
+			max-width: 100vh;
+			max-height: 100vh;
+			top: 50%;
+			left: 50%;
+			transform: translateX(-50%) translateY(-50%);
+		}
+	}

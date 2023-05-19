@@ -1,11 +1,12 @@
 /*** modules ***/
 	const CORE = require("../node/core")
+	const USER = require("../node/user")
 	module.exports = {}
 
 /*** constants ***/
 	const CONSTANTS = CORE.getAsset("constants")
 
-/*** creates ***/
+/*** REQUEST ***/
 	/* createOne */
 		module.exports.createOne = createOne
 		function createOne(REQUEST, callback) {
@@ -16,68 +17,57 @@
 						return
 					}
 
-				// new game
-					const game = CORE.getSchema("game")
-						game.userId = REQUEST.session.userId
-
-				// add player
-					const player = CORE.getSchema("player")
-						player.userId = REQUEST.session.userId
-					game.players[player.userId] = player
-
-				// query
-					const query = CORE.getSchema("query")
-						query.collection = "games"
-						query.command = "insert"
-						query.document = game
-
-				// insert
-					CORE.accessDatabase(query, results => {
+				// get user
+					USER.readOne(REQUEST.session.userId, null, results => {
 						if (!results.success) {
-							callback({success: false, message: `unable to create game`})
+							callback(results)
 							return
 						}
 
-						// game
-							const gameId = results.documents[0].id
+						// user
+							const user = results.user
+							delete user.secret
+
+						// in another game?
+							if (user.gameId) {
+								callback({success: false, message: `already in game ${user.gameId}`})
+								return
+							}
+
+						// new game
+							const game = CORE.getSchema("game")
+								game.creatorId = REQUEST.session.userId
+
+						// add player
+							const player = CORE.getSchema("player")
+								player.userId = user.id
+								player.name = user.name
+							game.players[player.userId] = player
 
 						// query
 							const query = CORE.getSchema("query")
-								query.collection = "users"
-								query.command = "update"
-								query.filters = {id: REQUEST.session.userId}
-								query.document = {
-									updated: new Date().getTime(),
-									gameId: gameId
-								}
+								query.collection = "games"
+								query.command = "insert"
+								query.document = game
 
-						// update
+						// insert
 							CORE.accessDatabase(query, results => {
 								if (!results.success) {
-									callback({success: false, message: `unable to update user`})
+									callback({success: false, message: `unable to create game`})
 									return
 								}
 
-								// query
-									const query = CORE.getSchema("query")
-										query.collection = "sessions"
-										query.command = "update"
-										query.filters = {id: REQUEST.session.id}
-										query.document = {
-											updated: new Date().getTime(),
-											gameId: gameId
-										}
+								// game
+									const gameId = results.documents[0].id
 
-								// update
-									CORE.accessDatabase(query, results => {
+								// update user
+									USER.setGame(REQUEST.session.userId, gameId, results => {
 										if (!results.success) {
-											callback({success: false, message: `unable to update session`})
+											callback(results)
 											return
 										}
-
-										// refresh
-											callback({success: true, message: `game created`, location: `/game/${gameId}`})
-											return
+										
+										callback({success: true, message: `game created`, location: `/game/${gameId}`})
 									})
 							})
 					})
@@ -99,7 +89,8 @@
 					}
 
 				// validate
-					if (!REQUEST.post.gameId || !CONSTANTS.gamePathRegex.test(`/game/${REQUEST.post.gameId}`)) {
+					const gameId = REQUEST.post.gameId
+					if (!gameId || !CONSTANTS.gamePathRegex.test(`/game/${gameId}`)) {
 						callback({success: false, message: `invalid game id`})
 						return
 					}
@@ -108,7 +99,7 @@
 					const query = CORE.getSchema("query")
 						query.collection = "games"
 						query.command = "find"
-						query.filters = {id: REQUEST.post.gameId}
+						query.filters = {id: gameId}
 
 				// find
 					CORE.accessDatabase(query, results => {
@@ -119,7 +110,6 @@
 
 						// game found
 							const game = results.documents[0]
-							const gameId = game.id
 
 						// already over?
 							if (game.timeEnd) {
@@ -127,76 +117,72 @@
 								return
 							}
 
-						// already joined --> redirect
-							if (game.players[REQUEST.post.userId]) {
-								callback({success: true, message: `joining game`, location: `/game/${gameId}`})
-								return
-							}
-
 						// too many players
-							if (Object.keys(game.players).length >= CONSTANTS.maxPlayers) {
+							if (!game.players[REQUEST.session.userId] && Object.keys(game.players).length >= CONSTANTS.maxPlayers) {
 								callback({success: false, message: `game is at maximum player count`})
 								return
 							}
 
-						// add player
-							const player = CORE.getSchema("player")
-								player.userId = REQUEST.session.userId
-
-						// query
-							const query = CORE.getSchema("query")
-								query.collection = "games"
-								query.command = "update"
-								query.filters = {id: REQUEST.session.userId}
-								query.document = {
-									updated: new Date().getTime(),
-									[`players.${player.userId}`]: player
-								}
-
-						// update
-							CORE.accessDatabase(query, results => {
+						// get user
+							USER.readOne(REQUEST.session.userId, null, results => {
 								if (!results.success) {
-									callback({success: false, message: `unable to join game`})
+									callback(results)
 									return
 								}
 
+								// user
+									const user = results.user
+									delete user.secret
+
+								// in another game?
+									if (user.gameId && user.gameId !== gameId) {
+										callback({success: false, message: `already in game ${user.gameId}`})
+										return
+									}
+
+								// already joined --> redirect
+									if (game.players[user.id]) {
+										USER.setGame(user.id, gameId, results => {
+											if (!results.success) {
+												callback(results)
+												return
+											}
+
+											callback({success: true, message: `rejoining game`, location: `/game/${gameId}`})
+										})
+										return
+									}
+
+								// add player
+									const player = CORE.getSchema("player")
+										player.userId = user.id
+										player.name = user.name
+
 								// query
 									const query = CORE.getSchema("query")
-										query.collection = "users"
+										query.collection = "games"
 										query.command = "update"
-										query.filters = {id: REQUEST.session.userId}
+										query.filters = {id: gameId}
 										query.document = {
 											updated: new Date().getTime(),
-											gameId: gameId
+											[`players.${player.userId}`]: player
 										}
 
 								// update
 									CORE.accessDatabase(query, results => {
 										if (!results.success) {
-											callback({success: false, message: `unable to update user`})
+											callback({success: false, message: `unable to join game`})
 											return
 										}
 
-										// query
-											const query = CORE.getSchema("query")
-												query.collection = "sessions"
-												query.command = "update"
-												query.filters = {id: REQUEST.session.id}
-												query.document = {
-													updated: new Date().getTime(),
-													gameId: gameId
-												}
-
-										// update
-											CORE.accessDatabase(query, results => {
+										// add user / session to this game
+											USER.setGame(user.id, gameId, results => {
 												if (!results.success) {
-													callback({success: false, message: `unable to update session`})
+													callback(results)
 													return
 												}
-
-												// refresh
-													callback({success: true, location: `/game/${gameId}`})
-													return
+												
+												callback({success: true, message: `joining game`, location: `/game/${gameId}`})
 											})
 									})
 							})
@@ -208,13 +194,20 @@
 			}
 		}
 
-/*** reads ***/
-	/* readOne */
-		module.exports.readOne = readOne
-		function readOne(REQUEST, callback) {
+/*** WEBSOCKETS ***/
+	/* leaveOne */
+		module.exports.leaveOne = leaveOne
+		function leaveOne(REQUEST, callback) {
 			try {
+				// authenticated?
+					if (!REQUEST.session.userId) {
+						callback({success: false, message: `not logged in`})
+						return
+					}
+
 				// validate
-					if (!REQUEST.post.gameId || !CONSTANTS.gamePathRegex.test(`/game/${REQUEST.post.gameId}`)) {
+					const gameId = REQUEST.post.gameId
+					if (!gameId || !CONSTANTS.gamePathRegex.test(`/game/${gameId}`)) {
 						callback({success: false, message: `invalid game id`})
 						return
 					}
@@ -223,7 +216,7 @@
 					const query = CORE.getSchema("query")
 						query.collection = "games"
 						query.command = "find"
-						query.filters = {id: REQUEST.post.gameId}
+						query.filters = {id: gameId}
 
 				// find
 					CORE.accessDatabase(query, results => {
@@ -235,8 +228,42 @@
 						// game found
 							const game = results.documents[0]
 
-						// return data
-							callback({success: true, game: game})
+						// not in game
+							if (!game.players[REQUEST.session.userId]) {
+								callback({success: false, message: `not in game`})
+								return
+							}
+
+						// ???
+							// re-targetng
+
+						// query
+							const query = CORE.getSchema("query")
+								query.collection = "games"
+								query.command = "update"
+								query.filters = {id: gameId}
+								query.document = {
+									updated: new Date().getTime(),
+									[`players.${REQUEST.session.userId}`]: undefined
+								}
+
+						// update
+							CORE.accessDatabase(query, results => {
+								if (!results.success) {
+									callback({success: false, message: `unable to leave game`})
+									return
+								}
+
+								// remove user / session to this game
+									USER.setGame(REQUEST.session.userId, null, results => {
+										if (!results.success) {
+											callback(results)
+											return
+										}
+										
+										callback({success: true, message: `leaving game`, location: `/`})
+									})
+							})
 					})
 			}
 			catch (error) {
@@ -245,7 +272,6 @@
 			}
 		}
 
-/*** updates ***/
 	/* updateOne */
 		module.exports.updateOne = updateOne
 		function updateOne(REQUEST, callback) {
@@ -287,6 +313,111 @@
 									callback({success: false, message: `unknown game update operation`})
 								break
 							}
+					})
+			}
+			catch (error) {
+				CORE.logError(error)
+				callback({success: false, message: `unable to ${arguments.callee.name}`})
+			}
+		}
+
+	/* deleteOne */
+		module.exports.deleteOne = deleteOne
+		function deleteOne(REQUEST, callback) {
+			try {
+				// authenticated?
+					if (!REQUEST.session.userId) {
+						callback({success: false, message: `not logged in`})
+						return
+					}
+
+				// validate
+					const gameId = REQUEST.post.gameId
+					if (!gameId || !CONSTANTS.gamePathRegex.test(`/game/${gameId}`)) {
+						callback({success: false, message: `invalid game id`})
+						return
+					}
+
+				// query
+					const query = CORE.getSchema("query")
+						query.collection = "games"
+						query.command = "find"
+						query.filters = {id: gameId}
+
+				// find
+					CORE.accessDatabase(query, results => {
+						if (!results.success) {
+							callback({success: false, message: `game not found`})
+							return
+						}
+
+						// not the creator
+							const game = results.documents[0]
+							if (game.creatorId !== REQUEST.session.userId) {
+								callback({success: false, message: `not the game creator`})
+								return
+							}
+
+						// all users
+							const userIds = Object.keys(game.players)
+
+						// query
+							const query = CORE.getSchema("query")
+								query.collection = "games"
+								query.command = "delete"
+								query.filters = {id: gameId}
+
+						// delete
+							CORE.accessDatabase(query, results => {
+								if (!results.success) {
+									callback({success: false, message: `unable to delete game`})
+									return
+								}
+
+								// update users
+									for (const userId of userIds) {
+										USER.setGame(userId, null, data => {
+											// websocket message ???
+										})
+									}
+							})
+					})
+			}
+			catch (error) {
+				CORE.logError(error)
+				callback({success: false, message: `unable to ${arguments.callee.name}`})
+			}
+		}
+
+/*** OTHER ***/
+	/* readOne */
+		module.exports.readOne = readOne
+		function readOne(gameId, callback) {
+			try {
+				// validate
+					if (!gameId || !CONSTANTS.gamePathRegex.test(`/game/${gameId}`)) {
+						callback({success: false, message: `invalid game id`})
+						return
+					}
+
+				// query
+					const query = CORE.getSchema("query")
+						query.collection = "games"
+						query.command = "find"
+						query.filters = {id: gameId}
+
+				// find
+					CORE.accessDatabase(query, results => {
+						if (!results.success) {
+							callback({success: false, message: `game not found`})
+							return
+						}
+
+						// game found
+							const game = results.documents[0]
+
+						// return data
+							callback({success: true, game: game})
 					})
 			}
 			catch (error) {

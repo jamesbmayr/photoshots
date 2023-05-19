@@ -261,10 +261,10 @@
 					// game
 						case "game":
 							return {
-								id:        generateRandom(),
-								updated:   new Date().getTime(),
-								userId:    null,
-								settings:  {
+								id:           generateRandom(),
+								updated:      new Date().getTime(),
+								creatorId:    null,
+								rules: {
 									cooldown: 0,
 									teams:    null,
 									time:     null,
@@ -274,9 +274,10 @@
 									timeIn:   null,
 									timeOut:  null
 								},
-								timeStart: 0,
-								timeEnd:   0,
-								players:   {},
+								timeStart:    0,
+								timeEnd:      0,
+								players:      {},
+								banned:       {}
 							}
 						break
 
@@ -434,6 +435,21 @@
 		}
 
 /*** tools ***/
+	/* convertTime */
+		module.exports.convertTime = convertTime
+		function convertTime(seconds) {
+			try {
+				if (isNaN(seconds)) {
+					return seconds
+				}
+
+				return `${Math.floor(seconds / 60)}:${('00' + Math.floor(seconds % 60)).slice(-2)}`
+			} catch (error) {
+				logError(error)
+				return seconds
+			}
+		}
+
 	/* renderHTML */
 		module.exports.renderHTML = renderHTML
 		function renderHTML(REQUEST, path, callback) {

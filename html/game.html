@@ -1,11 +1,41 @@
 <!DOCTYPE html>
 <html>
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title></title>
-</head>
-<body>
-
-</body>
+	<head>
+		<script node>getAsset("logo")</script node>
+		<script node>getAsset("meta")</script node>
+		<script node>getAsset("fonts")</script node>
+		<script node>getAsset("css-variables")</script node>
+		<link rel="stylesheet" href="game.css"/>
+		<script src="qrcode-generator.js" defer></script>
+		<script src="game.js" defer></script>
+	</head>
+	<body>
+		<a id="home-link" href="/">home</a>
+		<div id="container">
+			<h1><script node>REQUEST.game.id</script node></h1>
+			<div id="qr-code">
+				<h2>QR Code</h2>
+				<button id="qr-code-print-button">print QR Code</button>
+				<div id="qrcode-container"><script node>REQUEST.game.id</script node></div>
+			</div>
+			<div id="state">
+				<h2>state</h2>
+				<div id="state-start-time">start: <span>?</span></div>
+				<div id="state-start-end">end: <span>?</span></div>
+			</div>
+			<div id="rules">
+				<h2>rules</h2>
+				<li id="rules-cooldown">stun cooldown: <span>?</span></li>
+				<li id="rules-time">time until end: <span>?</span></li>
+				<li id="rules-shots">shots to win: <span>?</span></li>
+				<li id="rules-stuns">stuns to lose: <span>?</span></li>
+				<li id="rules-timeIn">time in to win: <span>?</span></li>
+				<li id="rules-timeOut">time out to lose: <span>?</span></li>
+			</div>
+			<div id="players">
+				<h2>players</h2>
+				<div id="players-list"></div>
+			</div>
+		</div>
+	</body>
 </html>

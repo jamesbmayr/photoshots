@@ -151,37 +151,17 @@
 							// home
 								case (/^\/?$/).test(REQUEST.url):
 									try {
-										RESPONSE.writeHead(200, CORE.constructHeaders(REQUEST))
-										CORE.renderHTML(REQUEST, "./html/home.html", html => {
-											RESPONSE.end(html)
-										})
-									}
-									catch (error) {_404(REQUEST, RESPONSE, error)}
-								break
+										// find user if logged in
+											USER.readOne(REQUEST.session.userId, null, data => {
+												if (data) {
+													REQUEST.user = data.user
+												}
 
-							// game
-								case (CONSTANTS.gamePathRegex).test(REQUEST.url):
-									try {
-										// find game
-											const gameId = REQUEST.path[REQUEST.path.length - 1]
-											if (REQUEST.session.userId && REQUEST.session.gameId && REQUEST.session.gameId == gameId) {
-												REQUEST.post = {gameId: gameId}
-												GAME.readOne(REQUEST, data => {
-													if (!data.success) {
-														_404(REQUEST, RESPONSE, `game ${gameId} not found`)
-													}
-
-													REQUEST.game = data.game
-													RESPONSE.writeHead(200, CORE.constructHeaders(REQUEST))
-													CORE.renderHTML(REQUEST, "./html/game.html", html => {
-														RESPONSE.end(html)
-													})
+												RESPONSE.writeHead(200, CORE.constructHeaders(REQUEST))
+												CORE.renderHTML(REQUEST, "./html/home.html", html => {
+													RESPONSE.end(html)
 												})
-												return
-											}
-
-										// not in game
-											_302(REQUEST, RESPONSE, `/`)
+											})
 									}
 									catch (error) {_404(REQUEST, RESPONSE, error)}
 								break
@@ -191,8 +171,7 @@
 									try {
 										// find user
 											const username = REQUEST.path[REQUEST.path.length - 1]
-											REQUEST.post = {username}
-											USER.readOne(REQUEST, data => {
+											USER.readOne(null, username, data => {
 												if (!data.success) {
 													_404(REQUEST, RESPONSE, `user ${username} not found`)
 													return
@@ -201,6 +180,35 @@
 												REQUEST.user = data.user
 												RESPONSE.writeHead(200, CORE.constructHeaders(REQUEST))
 												CORE.renderHTML(REQUEST, "./html/user.html", html => {
+													RESPONSE.end(html)
+												})
+											})
+									}
+									catch (error) {_404(REQUEST, RESPONSE, error)}
+								break
+
+							// game
+								case (CONSTANTS.gamePathRegex).test(REQUEST.url):
+									try {
+										// game id
+											const gameId = REQUEST.path[REQUEST.path.length - 1]
+
+										// not in game
+											if (!REQUEST.session.userId || !REQUEST.session.gameId || REQUEST.session.gameId !== gameId) {
+												_302(REQUEST, RESPONSE, `/`)
+												return
+											}
+
+										// find game
+											GAME.readOne(gameId, data => {
+												if (!data.success) {
+													_404(REQUEST, RESPONSE, `game ${gameId} not found`)
+													return
+												}
+
+												REQUEST.game = data.game
+												RESPONSE.writeHead(200, CORE.constructHeaders(REQUEST))
+												CORE.renderHTML(REQUEST, "./html/game.html", html => {
 													RESPONSE.end(html)
 												})
 											})
@@ -271,10 +279,30 @@
 
 								// updateUser
 									case "updateUserName":
+										try {
+											RESPONSE.writeHead(200, CORE.constructHeaders(REQUEST))
+											USER.updateName(REQUEST, data => {
+												RESPONSE.end(JSON.stringify(data))
+											})
+										}
+										catch (error) {_403(REQUEST, RESPONSE, error)}
+									break
+
 									case "updateUserPassword":
 										try {
 											RESPONSE.writeHead(200, CORE.constructHeaders(REQUEST))
-											USER.updateOne(REQUEST, data => {
+											USER.updatePassword(REQUEST, data => {
+												RESPONSE.end(JSON.stringify(data))
+											})
+										}
+										catch (error) {_403(REQUEST, RESPONSE, error)}
+									break
+
+								// delete
+									case "deleteUser":
+										try {
+											RESPONSE.writeHead(200, CORE.constructHeaders(REQUEST))
+											USER.deleteOne(REQUEST, data => {
 												RESPONSE.end(JSON.stringify(data))
 											})
 										}
@@ -394,19 +422,28 @@
 	/* saveSocket */
 		function saveSocket(REQUEST) {
 			try {
+				// gameId
+					const gameId = REQUEST.path[REQUEST.path.length - 1]
+
 				// on connect - save connection & fetch music
 					if (!CONNECTIONS[REQUEST.session.id]) {
 						CONNECTIONS[REQUEST.session.id] = {}
 					}
-					CONNECTIONS[REQUEST.session.id][REQUEST.path[REQUEST.path.length - 1]] = REQUEST.connection
-					sendSocketData({userId: REQUEST.session.userId, gameId: REQUEST.path[REQUEST.path.length - 1], success: true, message: `connected`, recipients: [REQUEST.session.id]})
-					GAME.readOne(REQUEST, sendSocketData)
+					CONNECTIONS[REQUEST.session.id][gameId] = REQUEST.connection
+					GAME.readOne(gameId, data => {
+						if (!data.success) {
+							sendSocketData({userId: REQUEST.session.userId, gameId: null, success: false, message: `unable to read game data`, recipients: [REQUEST.session.id]})
+							return
+						}
+						
+						sendSocketData({userId: REQUEST.session.userId, gameId: gameId, success: true, message: `connected`, game: data.game, recipients: [REQUEST.session.id]})
+					})
 
 				// on close
 					REQUEST.connection.on("close", (reasonCode, description) => {
 						// remove from connections pool
 							if (CONNECTIONS[REQUEST.session.id]) {
-								delete CONNECTIONS[REQUEST.session.id][REQUEST.path[REQUEST.path.length - 1]]
+								delete CONNECTIONS[REQUEST.session.id][gameId]
 							}
 							if (!Object.keys(CONNECTIONS[REQUEST.session.id]).length) {
 								delete CONNECTIONS[REQUEST.session.id]

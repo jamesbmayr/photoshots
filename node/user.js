@@ -6,7 +6,7 @@
 /*** constants ***/
 	const CONSTANTS = CORE.getAsset("constants")
 
-/*** creates ***/
+/*** REQUEST ***/
 	/* createOne */
 		module.exports.createOne = createOne
 		function createOne(REQUEST, callback) {
@@ -54,13 +54,18 @@
 									return
 								}
 
-								// update session
+								// user
 									const userId = results.documents[0].id
 									const username = results.documents[0].name
-									REQUEST.updateSession = {userId}
-									SESSION.updateOne(REQUEST, null, () => {
+
+								// update session
+									SESSION.setUser(REQUEST.session.id, userId, results => {
+										if (!results.success) {
+											callback(results)
+											return
+										}
+
 										callback({success: true, location: `/user/${username}`})
-										return
 									})
 							})
 					})
@@ -71,7 +76,6 @@
 			}
 		}
 
-/*** authenticates ***/
 	/* loginOne */
 		module.exports.loginOne = loginOne
 		function loginOne(REQUEST, callback) {
@@ -113,13 +117,18 @@
 								return
 							}
 
-						// update session
+						// user
 							const userId = results.documents[0].id
 							const username = results.documents[0].name
-							REQUEST.updateSession = {userId}
-							SESSION.updateOne(REQUEST, null, () => {
+
+						// update session
+							SESSION.setUser(REQUEST.session.id, userId, results => {
+								if (!results.success) {
+									callback(results)
+									return
+								}
+
 								callback({success: true, location: `/user/${username}`})
-								return
 							})
 					})
 			}
@@ -152,81 +161,25 @@
 							return
 						}
 
-						// update session
-							REQUEST.updateSession = {userId: null, gameId: null}
-							SESSION.updateOne(REQUEST, null, () => {
-								callback({success: true, location: `/`})
+						// user
+							const user = results.documents[0]
+
+						// in a game
+							if (user.gameId) {
+								callback({success: false, message: `leave game ${user.gameId} to log out`})
 								return
+							}
+
+						// update session
+							SESSION.setUser(REQUEST.session.id, null, results => {
+								if (!results.success) {
+									callback(results)
+									return
+								}
+
+								callback({success: true, location: `/`})
 							})
 					})
-			}
-			catch (error) {
-				CORE.logError(error)
-				callback({success: false, message: `unable to ${arguments.callee.name}`})
-			}
-		}
-
-/*** reads ***/
-	/* readOne */
-		module.exports.readOne = readOne
-		function readOne(REQUEST, callback) {
-			try {
-				// validate
-					if (!REQUEST.post.username || !CONSTANTS.userNameRegex.test(REQUEST.post.username)) {
-						callback({success: false, message: `invalid user name`})
-						return
-					}
-
-				// query
-					const query = CORE.getSchema("query")
-						query.collection = "users"
-						query.command = "find"
-						query.filters = {name: REQUEST.post.username}
-
-				// find
-					CORE.accessDatabase(query, results => {
-						if (!results.success) {
-							callback({success: false, message: `user not found`})
-							return
-						}
-
-						// user found
-							const user = results.documents[0]
-							delete user.secret
-
-						// return data
-							callback({success: true, user: user})
-					})
-			}
-			catch (error) {
-				CORE.logError(error)
-				callback({success: false, message: `unable to ${arguments.callee.name}`})
-			}
-		}
-
-/*** updates ***/
-	/* updateOne */
-		module.exports.updateOne = updateOne
-		function updateOne(REQUEST, callback) {
-			try {
-				// authenticated?
-					if (!REQUEST.session.userId) {
-						callback({success: false, message: `not logged in`})
-						return
-					}
-
-				// action
-					switch (REQUEST.post.action) {
-						case "updateUserName":
-							updateName(REQUEST, callback)
-						break
-						case "updateUserPassword":
-							updatePassword(REQUEST, callback)
-						break
-						default:
-							callback({success: false, message: `unknown user update operation`})
-						break
-					}
 			}
 			catch (error) {
 				CORE.logError(error)
@@ -238,6 +191,12 @@
 		module.exports.updateName = updateName
 		function updateName(REQUEST, callback) {
 			try {
+				// authenticated?
+					if (!REQUEST.session.userId) {
+						callback({success: false, message: `not logged in`})
+						return
+					}
+
 				// validate
 					if (!REQUEST.post.name || !CONSTANTS.userNameRegex.test(REQUEST.post.name.trim())) {
 						callback({success: false, message: `name must be 8 - 16 numbers, letters, and underscores`})
@@ -293,6 +252,12 @@
 		module.exports.updatePassword = updatePassword
 		function updatePassword(REQUEST, callback) {
 			try {
+				// authenticated?
+					if (!REQUEST.session.userId) {
+						callback({success: false, message: `not logged in`})
+						return
+					}
+
 				// validate
 					if (!REQUEST.post.oldPassword || !REQUEST.post.oldPassword.trim().length || !CONSTANTS.passwordRegex.test(REQUEST.post.oldPassword)) {
 						callback({success: false, message: `previous password must be 8 - 64 characters`})
@@ -357,7 +322,6 @@
 
 								// respond
 									callback({success: true, message: `password updated`})
-									return
 							})
 					})
 			}
@@ -367,11 +331,16 @@
 			}
 		}
 
-/*** deletes ***/
 	/* deleteOne */
 		module.exports.deleteOne = deleteOne
 		function deleteOne(REQUEST, callback) {
 			try {
+				// authenticated?
+					if (!REQUEST.session.userId) {
+						callback({success: false, message: `not logged in`})
+						return
+					}
+
 				// authenticated?
 					if (!REQUEST.session.userId) {
 						callback({success: false, message: `not logged in`})
@@ -404,10 +373,16 @@
 								return
 							}
 
-						// authenticate old password
+						// authenticate password
 							const {hash, salt} = CORE.hashRandom(REQUEST.post.password, user.secret.salt)
 							if (hash !== user.secret.hash || salt !== user.secret.salt) {
 								callback({success: false, message: `incorrect password`})
+								return
+							}
+
+						// in a game
+							if (user.gameId) {
+								callback({success: false, message: `leave game ${user.gameId} to log out`})
 								return
 							}
 
@@ -415,7 +390,7 @@
 							const query = CORE.getSchema("query")
 								query.collection = "users"
 								query.command = "delete"
-								query.filters = {id: user.id}
+								query.filters = {id: user.id} 
 
 						// delete
 							CORE.accessDatabase(query, results => {
@@ -425,11 +400,107 @@
 								}
 
 								// update session
-									REQUEST.updateSession = {userId: null, gameId: null}
-									SESSION.updateOne(REQUEST, null, () => {
+									SESSION.setUser(REQUEST.session.id, null, results => {
+										if (!results.success) {
+											callback(results)
+											return
+										}
+
 										callback({success: true, location: `/`})
-										return
 									})
+							})
+					})
+			}
+			catch (error) {
+				CORE.logError(error)
+				callback({success: false, message: `unable to ${arguments.callee.name}`})
+			}
+		}
+
+/*** OTHER ***/
+	/* readOne */
+		module.exports.readOne = readOne
+		function readOne(userId, username, callback) {
+			try {
+				// validate
+					if (!userId && !username) {
+						callback({success: false, message: `no user info`})
+						return
+					}
+
+					if (username && !CONSTANTS.userNameRegex.test(username)) {
+						callback({success: false, message: `invalid user name`})
+						return
+					}
+
+				// query
+					const query = CORE.getSchema("query")
+						query.collection = "users"
+						query.command = "find"
+						query.filters = userId ? {id: userId} : {name: username}
+
+				// find
+					CORE.accessDatabase(query, results => {
+						if (!results.success) {
+							callback({success: false, message: `user not found`})
+							return
+						}
+
+						// user found
+							const user = results.documents[0]
+							delete user.secret
+
+						// return data
+							callback({success: true, user: user})
+					})
+			}
+			catch (error) {
+				CORE.logError(error)
+				callback({success: false, message: `unable to ${arguments.callee.name}`})
+			}
+		}
+
+	/* setGame */
+		module.exports.setGame = setGame
+		function setGame(userId, gameId, callback) {
+			try {
+				// validate
+					if (!userId) {
+						callback({success: false, message: `unable to set game for ${userId}`})
+						return
+					}
+
+				// invalid gameId
+					if (gameId && !CONSTANTS.gamePathRegex.test(`/game/${gameId}`)) {
+						callback({success: false, message: `invalid game id`})
+						return
+					}
+
+				// query
+					const query = CORE.getSchema("query")
+						query.collection = "users"
+						query.command = "update"
+						query.filters = {id: userId}
+						query.document = {
+							updated: new Date().getTime(),
+							gameId: gameId
+						}
+
+				// update
+					CORE.accessDatabase(query, results => {
+						if (!results.success) {
+							callback({success: false, message: `unable to update game id`})
+							return
+						}
+
+						// update session
+							SESSION.setGame(userId, gameId, results => {
+								if (!results.success) {
+									callback({success: false, message: `unable to set game id`})
+									return
+								}
+
+								callback({success: true})
 							})
 					})
 			}

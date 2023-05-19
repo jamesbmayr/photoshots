@@ -17,22 +17,48 @@
 		</script node>
 		<div id="container">
 			<h1>PhotoShots</h1>
-			<label id="actions">
+			<div id="actions">
 				<script node>
 					if (REQUEST.session.userId) {
-						`<button id="join-camera-button">scan code</button>` +
-						`<input id="join-gameid-input" type="text" placeholder="game code">` +
-						`<button id="join-game-button">join game</button>` +
-						`<button id="create-game-button">new game</button>`
+						`<label id="profile-action">` +
+							`<span>logged in as </span><a id="profile-link" href="/user/${REQUEST.user.name}">${REQUEST.user.name}</a>` +
+						`</label>` + 
+						(REQUEST.session.gameId ? (
+							`<label id="join-action">` +
+								`<span>current game: </span><a id="join-link" href="/game/${REQUEST.session.gameId}">${REQUEST.session.gameId}</a>` +
+							`</label>`
+						) : (''))
 					}
 					else {
-						`<input id="login-username-input" type="text" placeholder="username">` +
-						`<input id="login-password-input" type="password" placeholder="password">` + 
-						`<button id="login-user-button">log in</button>` +
-						`<button id="create-user-button">sign up</button>`
+						`<label id="login-action">` +
+							`<input id="login-username-input" type="text" placeholder="username">` +
+							`<input id="login-password-input" type="password" placeholder="password">` + 
+							`<button id="login-user-button">log in</button>` +
+						`</label>` +
+						`<label id="create-action">` +
+							`<button id="create-user-button">sign up</button>` +
+						`</label>`
 					}
 				</script node>
-			</label>
+			</div>
+			<details id="about">
+				<summary id="about-summary">about</summary>
+				<div id="about-inner">
+					<div id="about-overview">
+						PhotoShots is a game.
+					</div>
+					<div id="about-credits">
+						<li>
+							<span>QR Code Reader: </span>
+							<a href="https://github.com/mebjas/html5-qrcode/blob/master/minified/html5-qrcode.min.js" target="_blank">mebjas</a>
+						</li>
+						<li>
+							<span>QR Code Generator: </span>
+							<a href="https://github.com/davidshimjs/qrcodejs/blob/master/qrcode.min.js" target="_blank">davidshimjs</a>
+						</li>
+					</div>
+				</div>
+			</details>
 		</div>
 	</body>
 </html>

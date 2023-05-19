@@ -8,11 +8,19 @@
 	/* elements */
 		const ELEMENTS = {
 			"logout-user-button": document.querySelector("#logout-user-button"),
+			"join-camera-button": document.querySelector("#join-camera-button"),
+			"join-gameid-input": document.querySelector("#join-gameid-input"),
+			"join-game-button": document.querySelector("#join-game-button"),
+			"create-game-button": document.querySelector("#create-game-button"),
 			"update-username-input": document.querySelector("#update-username-input"),
 			"update-username-button": document.querySelector("#update-username-button"),
 			"old-password-input": document.querySelector("#old-password-input"),
 			"new-password-input": document.querySelector("#new-password-input"),
-			"update-password-button": document.querySelector("#update-password-button")
+			"update-password-button": document.querySelector("#update-password-button"),
+			"delete-password-input": document.querySelector("#delete-password-input"),
+			"delete-user-button": document.querySelector("#delete-user-button"),
+			"qrcode-container": document.querySelector("#qrcode-container"),
+			"qr-code-print-button": document.querySelector("#qr-code-print-button")
 		}
 
 /*** helpers ***/
@@ -86,11 +94,51 @@
 			} catch (error) {console.log(error)}
 		}
 
+	/* displayQRCode */
+		function displayQRCode(text, imageContainer) {
+			try {
+				// clear
+					imageContainer.innerHTML = ""
+
+				// get dimensions element
+					const x = imageContainer.clientWidth
+					const y = imageContainer.clientHeight
+
+				// create image
+					new QRCode(imageContainer, {
+						text,
+						x,
+						y,
+						correctLevel: QRCode.CorrectLevel.M
+					})
+			} catch (error) {console.log(error)}
+		}
+
+	/* printQRCode */
+		ELEMENTS["qr-code-print-button"]?.addEventListener(TRIGGERS.click, printQRCode)
+		function printQRCode() {
+			try {
+				// trigger browser print modal
+					window.print()
+			} catch (error) {console.log(error)}
+		}
+
+/*** user ***/
+	/* displayUserQRCode */
+		displayUserQRCode()
+		function displayUserQRCode() {
+			try {
+				// get username
+					const username = ELEMENTS["qrcode-container"].innerText.trim()
+
+				// generate code
+					displayQRCode(username, ELEMENTS["qrcode-container"])
+			} catch (error) {console.log(error)}
+		}
+
 /*** logged in ***/
 	/* logoutUser */
-		if (ELEMENTS["logout-user-button"]) {
-			ELEMENTS["logout-user-button"].addEventListener(TRIGGERS.click, submitLogoutUser)
-		}
+		ELEMENTS["logout-user-button"]?.addEventListener(TRIGGERS.click, submitLogoutUser)
 		function submitLogoutUser(event) {
 			try {
 				// send to server
@@ -101,15 +149,14 @@
 		}
 
 	/* updateUserName */
-		if (ELEMENTS["update-username-button"]) {
-			ELEMENTS["update-username-button"].addEventListener(TRIGGERS.click, submitUpdateUserName)
-		}
+		ELEMENTS["update-username-button"]?.addEventListener(TRIGGERS.click, submitUpdateUserName)
 		function submitUpdateUserName(event) {
 			try {
 				// get username
-					const username = ELEMENTS["update-username-input"] ? ELEMENTS["update-username-input"].value.trim() : null
+					const username = ELEMENTS["update-username-input"]?.value.trim() || null
 					if (!username || !username.length) {
 						showToast({success: false, message: "enter a username"})
+						return
 					}
 
 				// send to server
@@ -121,21 +168,21 @@
 		}
 
 	/* updateUserPassword */
-		if (ELEMENTS["update-password-button"]) {
-			ELEMENTS["update-password-button"].addEventListener(TRIGGERS.click, submitUpdateUserPassword)
-		}
+		ELEMENTS["update-password-button"]?.addEventListener(TRIGGERS.click, submitUpdateUserPassword)
 		function submitUpdateUserPassword(event) {
 			try {
 				// get old password
-					const oldPassword = ELEMENTS["old-password-input"] ? ELEMENTS["old-password-input"].value.trim() : null
+					const oldPassword = ELEMENTS["old-password-input"]?.value.trim() || null
 					if (!oldPassword || !oldPassword.length) {
 						showToast({success: false, message: "enter current password"})
+						return
 					}
 
 				// get new password
-					const newPassword = ELEMENTS["new-password-input"] ? ELEMENTS["new-password-input"].value.trim() : null
+					const newPassword = ELEMENTS["new-password-input"]?.value.trim() || null
 					if (!newPassword || !newPassword.length) {
 						showToast({success: false, message: "enter new password"})
+						return
 					}
 
 				// send to server
@@ -144,5 +191,159 @@
 						oldPassword: oldPassword,
 						newPassword: newPassword
 					}, receivePost)
+			} catch (error) {console.log(error)}
+		}
+
+	/* updateUserDelete */
+		ELEMENTS["delete-user-button"]?.addEventListener(TRIGGERS.click, submitUpdateUserDelete)
+		function submitUpdateUserDelete(event) {
+			try {
+				// get password
+					const password = ELEMENTS["delete-password-input"]?.value.trim() || null
+					if (!password || !password.length) {
+						showToast({success: false, message: "enter current password"})
+						return
+					}
+
+				// confirm
+					if (!window.confirm("Are you sure you want to delete your account?")) {
+						return
+					}
+
+				// send to server
+					sendPost({
+						action: "deleteUser",
+						password: password
+					}, receivePost)
+			} catch (error) {console.log(error)}
+		}
+
+	/* createGame */
+		ELEMENTS["create-game-button"]?.addEventListener(TRIGGERS.click, submitCreateGame)
+		function submitCreateGame(event) {
+			try {
+				// send to server
+					sendPost({
+						action: "createGame"
+					}, receivePost)
+			} catch (error) {console.log(error)}
+		}
+
+	/* joinGame */
+		ELEMENTS["join-game-button"]?.addEventListener(TRIGGERS.click, submitJoinGame)
+		function submitJoinGame(event) {
+			try {
+				// get gameid
+					const gameId = ELEMENTS["join-gameid-input"]?.value.trim() || null
+					if (!gameId || !gameId.length) {
+						showToast({success: false, message: "enter a game id"})
+						return
+					}
+
+				// send to server
+					sendPost({
+						action: "joinGame",
+						gameId: gameId
+					}, receivePost)
+			} catch (error) {console.log(error)}
+		}
+
+/*** qr code reader ***/
+	/* scanCode */
+		ELEMENTS["join-camera-button"]?.addEventListener(TRIGGERS.click, startScanning)
+		function startScanning(event) {
+			try {
+				// first time
+					if (!ELEMENTS["qr-code-reader"]) {
+						// create element
+							const readerElement = document.createElement("div")
+								readerElement.id = "qr-code-reader-area"
+							document.body.appendChild(readerElement)
+
+						// create reader
+							ELEMENTS["qr-code-reader"] = new Html5Qrcode(readerElement.id)
+					}
+
+				// initialize
+					startQRcodeDetector()
+			} catch (error) {console.log(error)}
+		}
+
+	/* startCamera */
+		function startQRcodeDetector() {
+			try {
+				// get state
+					const qrCodeReaderState = ELEMENTS["qr-code-reader"].getState()
+
+				// scanning --> return
+					if (qrCodeReaderState == 2) { // SCANNING
+						return
+					}
+
+				// paused --> resume
+					if (qrCodeReaderState == 3) { // PAUSED
+						ELEMENTS["qr-code-reader"].resume()
+						ELEMENTS["qr-code-reader"].element.removeAttribute("hidden")
+						return
+					}
+
+				// not started / unknown --> start
+					ELEMENTS["qr-code-reader"].start({facingMode: "environment"}, {fps: 10}, detectQRcode)
+									  .then(handleQRcodeElements)
+									  .catch(detectQRcode)
+			} catch (error) {console.log(error)}
+		}
+
+	/* handleQRcodeElements */
+		function handleQRcodeElements() {
+			try {
+				// tasks
+					const tasks = {
+						removePausedIndicator: true,
+						attachVideoElement: true
+					}
+
+				// loop
+					const taskInterval = setInterval(() => {
+						// paused indicator
+							if (tasks.removePausedIndicator && ELEMENTS["qr-code-reader"].scannerPausedUiElement) {
+								ELEMENTS["qr-code-reader"].scannerPausedUiElement.remove()
+								delete tasks.removePausedIndicator
+							}
+
+						// video element
+							if (tasks.attachVideoElement && ELEMENTS["qr-code-reader"].element.querySelector("video")) {
+								ELEMENTS["qr-code-reader"].videoElement = ELEMENTS["qr-code-reader"].element.querySelector("video")
+								delete tasks.attachVideoElement
+							}
+
+						// no more tasks
+							if (!Object.keys(tasks).length) {
+								clearInterval(taskInterval)
+							}
+					}, 100) // ms
+			} catch (error) {console.log(error)}
+		}
+
+	/* detectQRcode */
+		function detectQRcode(text, result) {
+			try {
+				// no text?
+					if (!text || !text.length) {
+						return
+					}
+
+				// capture text
+					ELEMENTS["join-gameid-input"].value = text.trim()
+
+				// stop scanning
+					const qrCodeReaderState = ELEMENTS["qr-code-reader"].getState()
+					if (qrCodeReaderState == 2) { // SCANNING
+						ELEMENTS["qr-code-reader"].pause()
+						ELEMENTS["qr-code-reader"].element.setAttribute("hidden", true)
+					}
+
+				// click to join
+					ELEMENTS["join-game-button"].click()
 			} catch (error) {console.log(error)}
 		}

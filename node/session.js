@@ -2,7 +2,10 @@
 	const CORE = require("../node/core")
 	module.exports = {}
 
-/*** creates ***/
+/*** constants ***/
+	const CONSTANTS = CORE.getAsset("constants")
+
+/*** REQUEST / RESPONSE ***/
 	/* createOne */
 		module.exports.createOne = createOne
 		function createOne(REQUEST, RESPONSE, callback) {
@@ -29,7 +32,6 @@
 						REQUEST.session = session
 						REQUEST.cookie.session = session.id
 						callback(REQUEST, RESPONSE)
-						return
 					})
 			}
 			catch (error) {
@@ -38,7 +40,6 @@
 			}
 		}
 
-/*** reads ***/
 	/* readOne */
 		module.exports.readOne = readOne
 		function readOne(REQUEST, RESPONSE, callback) {
@@ -72,7 +73,6 @@
 						// update
 							REQUEST.session = results.documents[0]
 							updateOne(REQUEST, RESPONSE, callback)
-							return
 					})
 			}
 			catch (error) {
@@ -81,7 +81,6 @@
 			}
 		}
 
-/*** updates ***/
 	/* updateOne */
 		module.exports.updateOne = updateOne
 		function updateOne(REQUEST, RESPONSE, callback) {
@@ -95,13 +94,6 @@
 							updated: new Date().getTime()
 						}
 
-					if (REQUEST.updateSession && REQUEST.updateSession.userId !== undefined) {
-						query.document.userId = REQUEST.updateSession.userId
-					}
-					if (REQUEST.updateSession && REQUEST.updateSession.gameId !== undefined) {
-						query.document.gameId = REQUEST.updateSession.gameId
-					}
-
 				// update
 					CORE.accessDatabase(query, results => {
 						if (!results.success) {
@@ -114,6 +106,85 @@
 							REQUEST.session = results.documents[0]
 							REQUEST.cookie.session = results.documents[0].id
 							callback(REQUEST, RESPONSE)
+					})
+			}
+			catch (error) {
+				CORE.logError(error)
+				callback({success: false, message: `unable to ${arguments.callee.name}`})
+			}
+		}
+
+/*** OTHER ***/
+	/* setUser */
+		module.exports.setUser = setUser
+		function setUser(sessionId, userId, callback) {
+			try {
+				// validate
+					if (!sessionId) {
+						callback({success: false, message: `unable to set user id`})
+						return
+					}
+
+				// query
+					const query = CORE.getSchema("query")
+						query.collection = "sessions"
+						query.command = "update"
+						query.filters = {id: sessionId}
+						query.document = {
+							updated: new Date().getTime(),
+							userId: userId
+						}
+
+				// update
+					CORE.accessDatabase(query, results => {
+						if (!results.success) {
+							callback({success: false, message: `unable to set user id`})
+							return
+						}
+
+						callback({success: true})
+					})
+			}
+			catch (error) {
+				CORE.logError(error)
+				callback({success: false, message: `unable to ${arguments.callee.name}`})
+			}
+		}
+
+	/* setGame */
+		module.exports.setGame = setGame
+		function setGame(userId, gameId, callback) {
+			try {
+				// validate
+					if (!userId) {
+						callback({success: false, message: `unable to set game for ${userId}`})
+						return
+					}
+
+				// invalid gameId
+					if (gameId && !CONSTANTS.gamePathRegex.test(`/game/${gameId}`)) {
+						callback({success: false, message: `invalid game id`})
+						return
+					}
+
+				// query
+					const query = CORE.getSchema("query")
+						query.collection = "sessions"
+						query.command = "update"
+						query.filters = {userId: userId}
+						query.document = {
+							updated: new Date().getTime(),
+							gameId: gameId
+						}
+
+				// update
+					CORE.accessDatabase(query, results => {
+						if (!results.success) {
+							callback({success: false, message: `unable to set game id`})
+							return
+						}
+
+						callback({success: true})
 					})
 			}
 			catch (error) {

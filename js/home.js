@@ -7,16 +7,11 @@
 
 	/* elements */
 		const ELEMENTS = {
+			"logout-user-button": document.querySelector("#logout-user-button"),
 			"login-username-input": document.querySelector("#login-username-input"),
 			"login-password-input": document.querySelector("#login-password-input"),
 			"login-user-button": document.querySelector("#login-user-button"),
 			"create-user-button": document.querySelector("#create-user-button"),
-
-			"logout-user-button": document.querySelector("#logout-user-button"),
-			"join-camera-button": document.querySelector("#join-camera-button"),
-			"join-gameid-input": document.querySelector("#join-gameid-input"),
-			"join-game-button": document.querySelector("#join-game-button"),
-			"create-game-button": document.querySelector("#create-game-button")
 		}
 
 /*** helpers ***/
@@ -92,9 +87,7 @@
 
 /*** logged out ***/
 	/* createUser */
-		if (ELEMENTS["create-user-button"]) {
-			ELEMENTS["create-user-button"].addEventListener(TRIGGERS.click, submitCreateUser)
-		}
+		ELEMENTS["create-user-button"]?.addEventListener(TRIGGERS.click, submitCreateUser)
 		function submitCreateUser(event) {
 			try {
 				// get username
@@ -119,9 +112,7 @@
 		}
 
 	/* loginUser */
-		if (ELEMENTS["login-user-button"]) {
-			ELEMENTS["login-user-button"].addEventListener(TRIGGERS.click, submitLoginUser)
-		}
+		ELEMENTS["login-user-button"]?.addEventListener(TRIGGERS.click, submitLoginUser)
 		function submitLoginUser(event) {
 			try {
 				// get username
@@ -147,47 +138,12 @@
 
 /*** logged in ***/
 	/* logoutUser */
-		if (ELEMENTS["logout-user-button"]) {
-			ELEMENTS["logout-user-button"].addEventListener(TRIGGERS.click, submitLogoutUser)
-		}
+		ELEMENTS["logout-user-button"]?.addEventListener(TRIGGERS.click, submitLogoutUser)
 		function submitLogoutUser(event) {
 			try {
 				// send to server
 					sendPost({
 						action: "logoutUser"
-					}, receivePost)
-			} catch (error) {console.log(error)}
-		}
-
-	/* createGame */
-		if (ELEMENTS["create-game-button"]) {
-			ELEMENTS["create-game-button"].addEventListener(TRIGGERS.click, submitCreateGame)
-		}
-		function submitCreateGame(event) {
-			try {
-				// send to server
-					sendPost({
-						action: "createGame"
-					}, receivePost)
-			} catch (error) {console.log(error)}
-		}
-
-	/* joinGame */
-		if (ELEMENTS["join-game-button"]) {
-			ELEMENTS["join-game-button"].addEventListener(TRIGGERS.click, submitJoinGame)
-		}
-		function submitJoinGame(event) {
-			try {
-				// get gameid
-					const gameId = ELEMENTS["login-gameid-input"] ? ELEMENTS["login-gameid-input"].value.trim() : null
-					if (!gameId || !gameId.length) {
-						showToast({success: false, message: "enter a game id"})
-					}
-
-				// send to server
-					sendPost({
-						action: "joinGame",
-						gameId: gameId
 					}, receivePost)
 			} catch (error) {console.log(error)}
 		}
