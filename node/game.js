@@ -195,20 +195,14 @@
 		}
 
 /*** WEBSOCKETS ***/
-	/* leaveOne */
-		module.exports.leaveOne = leaveOne
-		function leaveOne(REQUEST, callback) {
+	/* setConnect */
+		module.exports.setConnect = setConnect
+		function setConnect(REQUEST, connected, callback) {
 			try {
-				// authenticated?
-					if (!REQUEST.session.userId) {
-						callback({success: false, message: `not logged in`})
-						return
-					}
-
 				// validate
-					const gameId = REQUEST.post.gameId
+					const gameId = REQUEST.path[REQUEST.path.length - 1]
 					if (!gameId || !CONSTANTS.gamePathRegex.test(`/game/${gameId}`)) {
-						callback({success: false, message: `invalid game id`})
+						callback({success: false, message: `invalid game id`, recipients: [REQUEST.session.userId]})
 						return
 					}
 
@@ -221,7 +215,65 @@
 				// find
 					CORE.accessDatabase(query, results => {
 						if (!results.success) {
-							callback({success: false, message: `game not found`})
+							callback({success: false, message: `game not found`, recipients: [REQUEST.session.userId]})
+							return
+						}
+
+						// not a player
+							if (!results.documents[0].players[REQUEST.session.userId]) {
+								callback({success: false, message: `not a player`, recipients: [REQUEST.session.userId]})
+								return
+							}
+
+						// query
+							const query = CORE.getSchema("query")
+								query.collection = "games"
+								query.command = "update"
+								query.filters = {id: gameId}
+								query.document = {
+									updated: new Date().getTime(),
+									[`players.${REQUEST.session.userId}.connected`]: connected || false
+								}
+
+						// update
+							CORE.accessDatabase(query, results => {
+								if (!results.success) {
+									callback({success: false, message: `game not found`, recipients: [REQUEST.session.userId]})
+									return
+								}
+
+								const game = results.documents[0]
+								callback({success: true, message: `${game.players[REQUEST.session.userId].name} ${connected ? "connected" : "disconnected"}`, game: game, recipients: Object.keys(game.players)})
+							})
+					})
+			}
+			catch (error) {
+				CORE.logError(error)
+				callback({success: false, message: `unable to ${arguments.callee.name}`})
+			}
+		}
+
+	/* quitOne */
+		module.exports.quitOne = quitOne
+		function quitOne(REQUEST, callback) {
+			try {
+				// validate
+					const gameId = REQUEST.session.gameId
+					if (!gameId || !CONSTANTS.gamePathRegex.test(`/game/${gameId}`)) {
+						callback({success: false, message: `invalid game id`, recipients: [REQUEST.session.userId]})
+						return
+					}
+
+				// query
+					const query = CORE.getSchema("query")
+						query.collection = "games"
+						query.command = "find"
+						query.filters = {id: gameId}
+
+				// find
+					CORE.accessDatabase(query, results => {
+						if (!results.success) {
+							callback({success: false, message: `game not found`, recipients: [REQUEST.session.userId]})
 							return
 						}
 
@@ -230,12 +282,21 @@
 
 						// not in game
 							if (!game.players[REQUEST.session.userId]) {
-								callback({success: false, message: `not in game`})
+								callback({success: false, message: `not in game`, recipients: [REQUEST.session.userId]})
+								return
+							}
+
+						// game ended
+							if (game.timeEnd) {
+								callback({success: false, message: `game already ended`, recipients: [REQUEST.session.userId]})
 								return
 							}
 
 						// ???
-							// re-targetng
+							// re-targeting
+
+						// name
+							const username = game.players[REQUEST.session.userId].name
 
 						// query
 							const query = CORE.getSchema("query")
@@ -247,12 +308,21 @@
 									[`players.${REQUEST.session.userId}`]: undefined
 								}
 
+						// reassign creator?
+							if (game.creatorId == REQUEST.session.userId) {
+								const otherPlayerIds = Object.keys(game.players).filter(playerId => playerId !== REQUEST.session.userId)
+								query.document.creatorId = otherPlayerIds ? otherPlayerIds[0] : null
+							}
+
 						// update
 							CORE.accessDatabase(query, results => {
 								if (!results.success) {
-									callback({success: false, message: `unable to leave game`})
+									callback({success: false, message: `unable to leave game`, recipients: [REQUEST.session.userId]})
 									return
 								}
+
+								// game
+									const updatedGame = results.documents[0]
 
 								// remove user / session to this game
 									USER.setGame(REQUEST.session.userId, null, results => {
@@ -261,8 +331,24 @@
 											return
 										}
 										
-										callback({success: true, message: `leaving game`, location: `/`})
+										callback({success: true, message: `quitting game`, location: `/user/${username}`, recipients: [REQUEST.session.userId]})
 									})
+
+								// empty game --> delete
+									if (!Object.keys(updatedGame.players).length) {
+										// query
+											const query = CORE.getSchema("query")
+												query.collection = "games"
+												query.command = "delete"
+												query.filters = {id: gameId}
+											
+										// update
+											CORE.accessDatabase(query, results => {})
+										return
+									}
+
+								// inform others
+									callback({success: true, message: `${username} quit the game`, game: updatedGame, recipients: Object.keys(updatedGame.players)})
 							})
 					})
 			}
@@ -276,15 +362,9 @@
 		module.exports.updateOne = updateOne
 		function updateOne(REQUEST, callback) {
 			try {
-				// authenticated?
-					if (!REQUEST.session.userId) {
-						callback({success: false, message: `not logged in`})
-						return
-					}
-
 				// not in game
 					if (!REQUEST.session.gameId) {
-						callback({success: false, message: `not in a game`})
+						callback({success: false, message: `not in a game`, recipients: [REQUEST.session.userId]})
 						return
 					}
 
@@ -297,7 +377,7 @@
 				// find
 					CORE.accessDatabase(query, results => {
 						if (!results.success) {
-							callback({success: false, message: `game not found`})
+							callback({success: false, message: `game not found`, recipients: [REQUEST.session.userId]})
 							return
 						}
 
@@ -310,14 +390,14 @@
 									// ???(REQUEST, callback)
 								break
 								default:
-									callback({success: false, message: `unknown game update operation`})
+									callback({success: false, message: `unknown game update operation`, recipients: [REQUEST.session.userId]})
 								break
 							}
 					})
 			}
 			catch (error) {
 				CORE.logError(error)
-				callback({success: false, message: `unable to ${arguments.callee.name}`})
+				callback({success: false, message: `unable to ${arguments.callee.name}`, recipients: [REQUEST.session.userId]})
 			}
 		}
 
@@ -325,16 +405,10 @@
 		module.exports.deleteOne = deleteOne
 		function deleteOne(REQUEST, callback) {
 			try {
-				// authenticated?
-					if (!REQUEST.session.userId) {
-						callback({success: false, message: `not logged in`})
-						return
-					}
-
 				// validate
-					const gameId = REQUEST.post.gameId
+					const gameId = REQUEST.session.gameId
 					if (!gameId || !CONSTANTS.gamePathRegex.test(`/game/${gameId}`)) {
-						callback({success: false, message: `invalid game id`})
+						callback({success: false, message: `invalid game id`, recipients: [REQUEST.session.userId]})
 						return
 					}
 
@@ -347,14 +421,14 @@
 				// find
 					CORE.accessDatabase(query, results => {
 						if (!results.success) {
-							callback({success: false, message: `game not found`})
+							callback({success: false, message: `game not found`, recipients: [REQUEST.session.userId]})
 							return
 						}
 
 						// not the creator
 							const game = results.documents[0]
 							if (game.creatorId !== REQUEST.session.userId) {
-								callback({success: false, message: `not the game creator`})
+								callback({success: false, message: `not the game creator`, recipients: [REQUEST.session.userId]})
 								return
 							}
 
@@ -370,14 +444,15 @@
 						// delete
 							CORE.accessDatabase(query, results => {
 								if (!results.success) {
-									callback({success: false, message: `unable to delete game`})
+									callback({success: false, message: `unable to delete game`, recipients: [REQUEST.session.userId]})
 									return
 								}
 
 								// update users
 									for (const userId of userIds) {
 										USER.setGame(userId, null, data => {
-											// websocket message ???
+											callback({success: false, message: `game deleted`, close: true, recipients: [userId]})
+											return
 										})
 									}
 							})

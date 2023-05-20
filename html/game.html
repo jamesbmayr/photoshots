@@ -11,6 +11,16 @@
 	</head>
 	<body>
 		<a id="home-link" href="/">home</a>
+		<script node>
+			if (!REQUEST.game.timeEnd && REQUEST.session.userId && REQUEST.game.players[REQUEST.session.userId]) {
+				`<button id="quit-game-button">quit game</button>`
+			}
+		</script node>
+		<script node>
+			if (!REQUEST.game.timeEnd && REQUEST.session.userId && REQUEST.game.creatorId == REQUEST.session.userId) {
+				`<button id="delete-game-button">delete game</button>`
+			}
+		</script node>
 		<div id="container">
 			<h1><script node>REQUEST.game.id</script node></h1>
 			<div id="qr-code">
@@ -20,21 +30,57 @@
 			</div>
 			<div id="state">
 				<h2>state</h2>
-				<div id="state-start-time">start: <span>?</span></div>
-				<div id="state-start-end">end: <span>?</span></div>
+				<div id="state-indicator">
+					<h3><script node>REQUEST.game.timeEnd ? "ended" : REQUEST.game.timeStart ? "playing" : "setting up"</script node></h3>
+				</div>
+				<div id="state-time-start">
+					<span>start: </span>
+					<span><script node>REQUEST.game.timeStart ? REQUEST.game.timeStart.toLocaleString() : "?"</script node></span>
+				</div>
+				<div id="state-time-end">
+					<span>end: </span>
+					<span><script node>REQUEST.game.timeEnd ? REQUEST.game.timeEnd.toLocaleString() : "?"</script node></span>
+				</div>
 			</div>
-			<div id="rules">
-				<h2>rules</h2>
-				<li id="rules-cooldown">stun cooldown: <span>?</span></li>
-				<li id="rules-time">time until end: <span>?</span></li>
-				<li id="rules-shots">shots to win: <span>?</span></li>
-				<li id="rules-stuns">stuns to lose: <span>?</span></li>
-				<li id="rules-timeIn">time in to win: <span>?</span></li>
-				<li id="rules-timeOut">time out to lose: <span>?</span></li>
+			<div id="mode">
+				<h2>mode</h2>
+				<li id="mode-name"><script node>REQUEST.game.mode.name || "?"</script node></li>
+				<li id="mode-win-condition"><script node>REQUEST.game.mode.winCondition || "?"</script node></li>
+				<li id="mode-end-condition"><script node>REQUEST.game.mode.endCondition || "?"</script node></li>
 			</div>
 			<div id="players">
 				<h2>players</h2>
-				<div id="players-list"></div>
+				<div id="players-list">
+					<script node>
+						Object.keys(REQUEST.game.players).map(playerId => {
+							const player = REQUEST.game.players[playerId]
+							const status = REQUEST.game.timeEnd ? (player.win ? "win" : player.loss ? "loss" : "tie") :
+										   !player.connected ? "disconnected" :
+										   REQUEST.game.timeStart ? (player.cooldown ? "stunned" : player.target ? "in" : "out") :
+										   "ready"
+							return `<div class="player">` +
+									`<h3>${player.name}</h3>` +
+									`<h4>${status}</h4>` +
+									`<li class="stat">` +
+										`<span>shots</span>` +
+										`<span>${player.shots}<span>` +
+									`</li>` +
+									`<li class="stat">` +
+										`<span>stuns</span>` +
+										`<span>${player.stuns}<span>` +
+									`</li>` +
+									`<li class="stat">` +
+										`<span>time in</span>` +
+										`<span>${player.timeIn}<span>` +
+									`</li>` +
+									`<li class="stat">` +
+										`<span>time out</span>` +
+										`<span>${player.timeOut}<span>` +
+									`</li>` +
+								`</div>`
+						}).join(`\n`)
+					</script node>
+				</div>
 			</div>
 		</div>
 	</body>

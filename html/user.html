@@ -75,10 +75,6 @@
 					<span><script node>REQUEST.user.stats.stuns</script node><span>
 				</div>
 				<div class="stat">
-					<span>saves</span>
-					<span><script node>REQUEST.user.stats.saves</script node><span>
-				</div>
-				<div class="stat">
 					<span>time in</span>
 					<span><script node>REQUEST.user.stats.timeIn</script node><span>
 				</div>
@@ -105,37 +101,34 @@
 						else {
 							Object.keys(REQUEST.user.games).map(gameId => {
 								const game = REQUEST.user.games[gameId]
+								const player = game.players[REQUEST.user.id]
 								return `<div class="game">` +
 									`<h3>${game.id}</h3>` +
-									`<h4>${new Date(game.timeStart).toLocaleString()}</h4>` +
+									`<h4>${new Date(game.timeEnd).toLocaleString()}</h4>` +
 									`<li class="stat">` +
 										`<span>shots</span>` +
-										`<span>${game.players[REQUEST.user.id].shots}<span>` +
+										`<span>${player.shots}<span>` +
 									`</li>` +
 									`<li class="stat">` +
 										`<span>stuns</span>` +
-										`<span>${game.players[REQUEST.user.id].stuns}<span>` +
-									`</li>` +
-									`<li class="stat">` +
-										`<span>saves</span>` +
-										`<span>${game.players[REQUEST.user.id].saves}<span>` +
+										`<span>${player.stuns}<span>` +
 									`</li>` +
 									`<li class="stat">` +
 										`<span>time in</span>` +
-										`<span>${game.players[REQUEST.user.id].timeIn}<span>` +
+										`<span>${player.timeIn}<span>` +
 									`</li>` +
 									`<li class="stat">` +
 										`<span>time out</span>` +
-										`<span>${game.players[REQUEST.user.id].timeOut}<span>` +
+										`<span>${player.timeOut}<span>` +
 									`</li>` +
 									`<li class="stat">` +
 										`<span>final</span>` +
-										`<span>${game.players[REQUEST.user.id].win ? "win" : 
-												game.players[REQUEST.user.id].loss ? "loss" : 
+										`<span>${player.win ? "win" : 
+												player.loss ? "loss" : 
 												"tie"}<span>` +
 									`</li>` +
 								`</div>`
-							}).join('\n')
+							}).join(`\n`)
 						}
 					</script node>
 				</div>

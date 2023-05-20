@@ -249,7 +249,6 @@
 								stats: {
 									shots:    0,
 									stuns:    0,
-									saves:    0,
 									timeIn:   0,
 									timeOut:  0,
 									wins:     0,
@@ -261,23 +260,17 @@
 					// game
 						case "game":
 							return {
-								id:           generateRandom(),
-								updated:      new Date().getTime(),
-								creatorId:    null,
-								rules: {
-									cooldown: 0,
-									teams:    null,
-									time:     null,
-									shots:    null,
-									stuns:    null,
-									saves:    null,
-									timeIn:   null,
-									timeOut:  null
+								id:              generateRandom(),
+								updated:         new Date().getTime(),
+								creatorId:       null,
+								mode: {
+									name:        null,
+									description: null
 								},
-								timeStart:    0,
-								timeEnd:      0,
-								players:      {},
-								banned:       {}
+								timeStart:       0,
+								timeEnd:         0,
+								players:         {},
+								banned:          {}
 							}
 						break
 
@@ -286,13 +279,10 @@
 								userId:    null,
 								connected: false,
 								name:      "",
-								stunned:   false,
-								team:      null,
 								target:    null,
 								cooldown:  0,
 								shots:     0,
 								stuns:     0,
-								saves:     0,
 								timeIn:    0,
 								timeOut:   0,
 								win:       false,
@@ -418,7 +408,34 @@
 								idSet: "abcdefghijklmnopqrstuvwxyz",
 								idLength: 8,
 								minPlayers: 3,
-								maxPlayers: 16
+								maxPlayers: 16,
+								gameModes: {
+									"fifteen_minutes_of_fame": {
+										name: "15 minutes of fame",
+										winCondition: "Player with the most shots at game end wins.",
+										endCondition: "Game ends after 15 minutes."
+									},
+									"last_one_standing": {
+										name: "last one standing",
+										winCondition: "Last player in when everyone else is out wins.",
+										endCondition: "If no one wins after 15 minutes, most time in wins."
+									},
+									"ten_minutes_in": {
+										name: "10 min in",
+										winCondition: "First player to be in 10 minutes more than they're out wins.",
+										endCondition: "If no one wins after 15 minutes, most time in wins."
+									},
+									"straight_shooter": {
+										name: "str8 shooter",
+										winCondition: "First player to have 8 shots more than they have stuns wins.",
+										endCondition: "If no one wins after 15 minutes, most shots - stuns wins."
+									},
+									"one_stun_done": {
+										name: "one stun done",
+										winCondition: "Last player to be stunned wins after each other player is stunned.",
+										endCondition: "If no one wins after 15 minutes, any players with 0 stuns win."
+									}
+								}
 							}
 						break
 
@@ -471,7 +488,7 @@
 						}
 						catch (error) {
 							html.temp = ""
-							logError(`<sn>${Math.ceil(html.count / 2)}</sn>\n${error}`)
+							logError(`${path}: <sn>${Math.ceil(html.count / 2)}</sn>\n${error}`)
 						}
 						html.array[html.count] = html.temp
 					}

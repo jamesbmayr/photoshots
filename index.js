@@ -193,12 +193,6 @@
 										// game id
 											const gameId = REQUEST.path[REQUEST.path.length - 1]
 
-										// not in game
-											if (!REQUEST.session.userId || !REQUEST.session.gameId || REQUEST.session.gameId !== gameId) {
-												_302(REQUEST, RESPONSE, `/`)
-												return
-											}
-
 										// find game
 											GAME.readOne(gameId, data => {
 												if (!data.success) {
@@ -422,92 +416,106 @@
 	/* saveSocket */
 		function saveSocket(REQUEST) {
 			try {
+				// not logged in
+					if (!REQUEST.session.userId) {
+						const stringifiedData = JSON.stringify({success: false, close: true, message: `not logged in`})
+						REQUEST.connection.sendUTF(stringifiedData)
+						return
+					}
+
 				// gameId
 					const gameId = REQUEST.path[REQUEST.path.length - 1]
 
-				// on connect - save connection & fetch music
-					if (!CONNECTIONS[REQUEST.session.id]) {
-						CONNECTIONS[REQUEST.session.id] = {}
-					}
-					CONNECTIONS[REQUEST.session.id][gameId] = REQUEST.connection
-					GAME.readOne(gameId, data => {
-						if (!data.success) {
-							sendSocketData({userId: REQUEST.session.userId, gameId: null, success: false, message: `unable to read game data`, recipients: [REQUEST.session.id]})
-							return
-						}
-						
-						sendSocketData({userId: REQUEST.session.userId, gameId: gameId, success: true, message: `connected`, game: data.game, recipients: [REQUEST.session.id]})
-					})
+				// on connect - save connection & fetch game
+					CONNECTIONS[REQUEST.session.userId] = REQUEST.connection
+					GAME.setConnect(REQUEST, true, sendSocketData)
 
 				// on close
-					REQUEST.connection.on("close", (reasonCode, description) => {
-						// remove from connections pool
-							if (CONNECTIONS[REQUEST.session.id]) {
-								delete CONNECTIONS[REQUEST.session.id][gameId]
-							}
-							if (!Object.keys(CONNECTIONS[REQUEST.session.id]).length) {
-								delete CONNECTIONS[REQUEST.session.id]
-							}
-
-						// update game
-							REQUEST.post = {action: "disconnectUser"}
-							GAME.updateOne(REQUEST, sendSocketData)
+					REQUEST.connection.on("close", reasonCode => {
+						closeSocket(REQUEST, reasonCode)
 					})
 
 				// on message
 					REQUEST.connection.on("message", message => {
-						try {
-							// get post data
-								const data = JSON.parse(message.utf8Data)
-
-							// invalid data?
-								if (!data || typeof data !== "object") {
-									return
-								}
-
-							// route
-								REQUEST.post = data
-								routeSocket(REQUEST)
-						}
-						catch (error) {CORE.logError(error)}
+						routeSocket(REQUEST, message)
 					})
 			}
-			catch (error) {_400(REQUEST, `unable to ${arguments.callee.name}`)}
+			catch (error) {
+				CORE.logError(error)
+				_400(REQUEST, `unable to ${arguments.callee.name}`)
+			}
+		}
+
+	/* closeSocket */
+		function closeSocket(REQUEST, reasonCode) {
+			try {
+				// log
+					CORE.logStatus(`${REQUEST.cookie.session} @ ${REQUEST.ip}\n` +
+						`[WEBSOCKET] ${REQUEST.path.join("/")}\n` +
+						` - disconnected: ${reasonCode}`)
+
+				// remove from connections pool
+					if (CONNECTIONS[REQUEST.session.userId]) {
+						delete CONNECTIONS[REQUEST.session.userId]
+					}
+
+				// update game
+					GAME.setConnect(REQUEST, false, sendSocketData)
+			} catch (error) {CORE.logError(error)}
 		}
 
 	/* routeSocket */
-		function routeSocket(REQUEST) {
+		function routeSocket(REQUEST, message) {
 			try {
-				// to game
-					GAME.updateOne(REQUEST, sendSocketData)
+				// log
+					CORE.logStatus(`${REQUEST.cookie.session} @ ${REQUEST.ip}\n` +
+						`[WEBSOCKET] ${REQUEST.path.join("/")}\n` +
+						` - message: ${message.utf8Data}`)
+
+				// get post data
+					const data = JSON.parse(message.utf8Data)
+					if (!data || typeof data !== "object") {
+						return
+					}
+					REQUEST.post = data
+
+				// actions
+					switch (REQUEST.post.action) {
+						case "quitGame":
+							GAME.quitOne(REQUEST, sendSocketData)
+						break
+						case "deleteGame":
+							GAME.deleteOne(REQUEST, sendSocketData)
+						break
+						default: 
+							sendSocketData({success: false, message: `invalid action ${REQUEST.post.action || "[none]"}`, recipients: [REQUEST.session.userId]})
+						break
+					}
 			}
-			catch (error) {_400(REQUEST, `unable to ${arguments.callee.name}`)}
+			catch (error) {
+				CORE.logError(error)
+				_400(REQUEST, `unable to ${arguments.callee.name}`)
+			}
 		}
 
 	/* sendSocketData */
 		function sendSocketData(data) {
 			try {
-				// nothing to send or no one to send to
-					if (!data.recipients || !data.gameId) {
+				// recipients
+					const recipients = data.recipients.slice() || []
+					if (!recipients.length) {
 						return
 					}
-
-				// get recipients
-					const recipients = data.recipients.slice() || []
 					delete data.recipients
 
-				// stringify
-					const gameId = data.gameId
+				// data
 					const stringifiedData = JSON.stringify(data)
 
 				// loop through recipients
 					for (const recipient of recipients) {
 						try {
-							if (CONNECTIONS[recipient] && CONNECTIONS[recipient][gameId]) {
-								CONNECTIONS[recipient][gameId].sendUTF(stringifiedData)
-							}
-						}
-						catch (error) {CORE.logError(error)}
+							CONNECTIONS[recipient]?.sendUTF(stringifiedData)
+						} catch (error) {CORE.logError(error)}
 					}
 			}
 			catch (error) {CORE.logError(error)}
