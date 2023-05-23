@@ -487,6 +487,18 @@
 						case "deleteGame":
 							GAME.deleteOne(REQUEST, sendSocketData)
 						break
+						case "selectMode":
+							GAME.selectMode(REQUEST, sendSocketData)
+						break
+						case "banPlayer":
+							GAME.banPlayer(REQUEST, sendSocketData)
+						break
+						case "startGame":
+							GAME.startOne(REQUEST, sendSocketData)
+						break
+						case "capturePlayer":
+							GAME.capturePlayer(REQUEST, sendSocketData)
+						break
 						default: 
 							sendSocketData({success: false, message: `invalid action ${REQUEST.post.action || "[none]"}`, recipients: [REQUEST.session.userId]})
 						break

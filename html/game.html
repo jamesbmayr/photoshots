@@ -11,16 +11,23 @@
 	</head>
 	<body>
 		<a id="home-link" href="/">home</a>
-		<script node>
-			if (!REQUEST.game.timeEnd && REQUEST.session.userId && REQUEST.game.players[REQUEST.session.userId]) {
-				`<button id="quit-game-button">quit game</button>`
-			}
-		</script node>
-		<script node>
-			if (!REQUEST.game.timeEnd && REQUEST.session.userId && REQUEST.game.creatorId == REQUEST.session.userId) {
-				`<button id="delete-game-button">delete game</button>`
-			}
-		</script node>
+		<div id="actions">
+			<script node>
+				if (!REQUEST.game.timeEnd && REQUEST.session.userId && REQUEST.game.players[REQUEST.session.userId]) {
+					`<button id="quit-game-button">quit game</button>`
+				}
+			</script node>
+			<script node>
+				if (!REQUEST.game.timeEnd && REQUEST.session.userId && REQUEST.game.ownerId == REQUEST.session.userId) {
+					`<button id="delete-game-button">delete game</button>`
+				}
+			</script node>
+			<script node>
+				if (!REQUEST.game.timeStart && REQUEST.session.userId && REQUEST.game.ownerId == REQUEST.session.userId) {
+					`<button id="start-game-button">start game</button>`
+				}
+			</script node>
+		</div>
 		<div id="container">
 			<h1><script node>REQUEST.game.id</script node></h1>
 			<div id="qr-code">
@@ -28,25 +35,34 @@
 				<button id="qr-code-print-button">print QR Code</button>
 				<div id="qrcode-container"><script node>REQUEST.game.id</script node></div>
 			</div>
-			<div id="state">
+			<div id="game-state">
 				<h2>state</h2>
-				<div id="state-indicator">
+				<div id="game-state-indicator">
 					<h3><script node>REQUEST.game.timeEnd ? "ended" : REQUEST.game.timeStart ? "playing" : "setting up"</script node></h3>
 				</div>
-				<div id="state-time-start">
+				<div id="game-state-time-start">
 					<span>start: </span>
-					<span><script node>REQUEST.game.timeStart ? REQUEST.game.timeStart.toLocaleString() : "?"</script node></span>
+					<span><script node>REQUEST.game.timeStart ? new Date(REQUEST.game.timeStart).toLocaleString() : "?"</script node></span>
 				</div>
-				<div id="state-time-end">
+				<div id="game-state-time-end">
 					<span>end: </span>
-					<span><script node>REQUEST.game.timeEnd ? REQUEST.game.timeEnd.toLocaleString() : "?"</script node></span>
+					<span><script node>REQUEST.game.timeEnd ? new Date(REQUEST.game.timeEnd).toLocaleString() : "?"</script node></span>
 				</div>
 			</div>
-			<div id="mode">
+			<div id="game-mode">
 				<h2>mode</h2>
-				<li id="mode-name"><script node>REQUEST.game.mode.name || "?"</script node></li>
-				<li id="mode-win-condition"><script node>REQUEST.game.mode.winCondition || "?"</script node></li>
-				<li id="mode-end-condition"><script node>REQUEST.game.mode.endCondition || "?"</script node></li>
+				<li id="game-mode-name">
+					<script node>
+						const gameModes = getAsset("constants").gameModes;
+						`<select id="game-mode-select"${REQUEST.game.timeStart || !REQUEST.session.userId || REQUEST.game.ownerId !== REQUEST.session.userId ? " disabled" : ""}>` +
+							Object.keys(gameModes).map(gameModeId => 
+								`<option value="${gameModeId}"${gameModeId == REQUEST.game.mode.id ? " selected" : ""}>${gameModes[gameModeId].name}</option>`
+							).join("\n") +
+						`</select>`
+					</script node>
+				</li>
+				<li id="game-mode-win-condition"><script node>REQUEST.game.mode.winCondition || "?"</script node></li>
+				<li id="game-mode-end-condition"><script node>REQUEST.game.mode.endCondition || "?"</script node></li>
 			</div>
 			<div id="players">
 				<h2>players</h2>
@@ -58,22 +74,25 @@
 										   !player.connected ? "disconnected" :
 										   REQUEST.game.timeStart ? (player.cooldown ? "stunned" : player.target ? "in" : "out") :
 										   "ready"
-							return `<div class="player">` +
-									`<h3>${player.name}</h3>` +
-									`<h4>${status}</h4>` +
-									`<li class="stat">` +
+							return `<div class="player" id="player-${playerId}">` +
+									`<h3 class="player-name">${player.name}</h3>` +
+									`<h4 class="player-status">${status}</h4>` +
+									(!REQUEST.game.timeEnd && REQUEST.session.userId && REQUEST.game.ownerId == REQUEST.session.userId && REQUEST.session.userId !== playerId ? 
+										`<button class="player-ban" value="${playerId}">ban</button>` : 
+										"") +
+									`<li class="player-stat">` +
 										`<span>shots</span>` +
 										`<span>${player.shots}<span>` +
 									`</li>` +
-									`<li class="stat">` +
+									`<li class="player-stat">` +
 										`<span>stuns</span>` +
 										`<span>${player.stuns}<span>` +
 									`</li>` +
-									`<li class="stat">` +
+									`<li class="player-stat">` +
 										`<span>time in</span>` +
 										`<span>${player.timeIn}<span>` +
 									`</li>` +
-									`<li class="stat">` +
+									`<li class="player-stat">` +
 										`<span>time out</span>` +
 										`<span>${player.timeOut}<span>` +
 									`</li>` +

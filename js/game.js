@@ -2,15 +2,30 @@
 	/* triggers */
 		const TRIGGERS = {
 			submit: "submit",
-			click: "click"
+			click: "click",
+			input: "input"
 		}
 
 	/* elements */
 		const ELEMENTS = {
+			"actions": document.querySelector("#actions"),
 			"quit-game-button": document.querySelector("#quit-game-button"),
 			"delete-game-button": document.querySelector("#delete-game-button"),
+			"start-game-button": document.querySelector("#start-game-button"),
 			"qrcode-container": document.querySelector("#qrcode-container"),
-			"qr-code-print-button": document.querySelector("#qr-code-print-button")
+			"qr-code-print-button": document.querySelector("#qr-code-print-button"),
+			"game-state": document.querySelector("#game-state"),
+			"game-state-indicator": document.querySelector("#state-indicator"),
+			"game-state-time-start": document.querySelector("#game-state-time-start"),
+			"game-state-time-end": document.querySelector("#game-state-time-end"),
+			"game-mode": document.querySelector("#game-mode"),
+			"game-mode-select": document.querySelector("#game-mode-select"),
+			"game-mode-name": document.querySelector("#game-mode-name"),
+			"game-mode-win-condition": document.querySelector("#game-mode-win-condition"),
+			"game-mode-end-condition": document.querySelector("#game-mode-end-condition"),
+			"players-list": document.querySelector("#players-list"),
+			"players-list-items": Array.from(document.querySelectorAll(".player")),
+			"players-ban-buttons": Array.from(document.querySelectorAll(".player-ban")),
 		}
 
 /*** helpers ***/
@@ -183,11 +198,25 @@
 							}
 
 					// data
-						console.log(data) // ???
+						if (data.owner) {
+							displayOwner(data.game, data.owner)
+						}
+
+						if (data.start) {
+							displayStart()
+						}
+
+						if (data.end) {
+							displayEnd()
+						}
+
+						if (data.game) {
+							displayGame(data.game)
+						}
 				} catch (error) {console.log(error)}
 			}
 
-/*** game ***/
+/*** display ***/
 	/* displayGameQRCode */
 		displayGameQRCode()
 		function displayGameQRCode() {
@@ -200,20 +229,77 @@
 			} catch (error) {console.log(error)}
 		}
 
-	/* quitGame */
-		ELEMENTS["quit-game-button"]?.addEventListener(TRIGGERS.click, quitGame)
-		function quitGame(event) {
+	/* displayOwner */
+		function displayOwner(game, ownerId) {
 			try {
-				// data
-					const data = {
-						action: "quitGame"
+				// delete game button
+					if (!game.timeEnd && !ELEMENTS["delete-game-button"]) {
+						ELEMENTS["delete-game-button"] = document.createElement("button")
+						ELEMENTS["delete-game-button"].id = "delete-game-button"
+						ELEMENTS["delete-game-button"].innerHTML = "delete game"
+						ELEMENTS["delete-game-button"].addEventListener(TRIGGERS.click, deleteGame)
+						ELEMENTS["actions"].appendChild(ELEMENTS["delete-game-button"])
 					}
 
-				// send
-					SOCKET.connection?.send(JSON.stringify(data))
+				// start game button
+					if (!game.timeStart && !ELEMENTS["start-game-button"]) {
+						ELEMENTS["start-game-button"] = document.createElement("button")
+						ELEMENTS["start-game-button"].id = "start-game-button"
+						ELEMENTS["start-game-button"].innerHTML = "start game"
+						ELEMENTS["start-game-button"].addEventListener(TRIGGERS.click, startGame)
+						ELEMENTS["actions"].appendChild(ELEMENTS["start-game-button"])
+					}
+
+				// game mode select
+					if (!game.timeStart) {
+						ELEMENTS["game-mode-select"].removeAttribute("disabled")
+					}
+
+				// players ban buttons
+					if (!game.timeEnd) {
+						ELEMENTS["players-ban-buttons"] = []
+						ELEMENTS["players-list-items"].forEach(playerElement => {
+							// not self
+								const playerId = playerElement.id.split("-")[0]
+								if (playerId == ownerId) {
+									return
+								}
+
+							// ban button
+								const banButton = document.createElement("button")
+									banButton.className = "player-ban"
+									banButton.value = playerId
+									banButton.innerHTML = "ban"
+									banButton.addEventListener(TRIGGERS.click, banPlayer)
+								ELEMENTS["players-ban-buttons"].push(banButton)
+								playerElement.querySelector(".player-status").after(banButton)
+						})
+					}
 			} catch (error) {console.log(error)}
 		}
-	
+
+	/* displayStart */
+		function displayStart() {
+			try {
+				// ???
+			} catch (error) {console.log(error)}
+		}
+
+	/* displayEnd */
+		function displayEnd() {
+			try {
+				// ???
+			} catch (error) {console.log(error)}
+		}
+
+	/* displayGame */
+		function displayGame(data) {
+			try {
+				// ???
+			} catch (error) {console.log(error)}
+		}
+
+/*** actions - owner ***/
 	/* deleteGame */
 		ELEMENTS["delete-game-button"]?.addEventListener(TRIGGERS.click, deleteGame)
 		function deleteGame(event) {
@@ -227,4 +313,76 @@
 					SOCKET.connection?.send(JSON.stringify(data))
 			} catch (error) {console.log(error)}
 		}
-	
+
+	/* startGame */
+		ELEMENTS["start-game-button"]?.addEventListener(TRIGGERS.click, startGame)
+		function startGame(event) {
+			try {
+				// data
+					const data = {
+						action: "startGame"
+					}
+
+				// send
+					SOCKET.connection?.send(JSON.stringify(data))
+			} catch (error) {console.log(error)}
+		}
+
+	/* selectMode */
+		ELEMENTS["game-mode-select"]?.addEventListener(TRIGGERS.input, selectMode)
+		function selectMode(event) {
+			try {
+				// data
+					const data = {
+						action: "selectMode",
+						mode: ELEMENTS["game-mode-select"].value
+					}
+
+				// send
+					SOCKET.connection?.send(JSON.stringify(data))
+			} catch (error) {console.log(error)}
+		}
+
+	/* banPlayer */
+		ELEMENTS["players-ban-buttons"]?.forEach(button => button.addEventListener(TRIGGERS.click, banPlayer))
+		function banPlayer(event) {
+			try {
+				// data
+					const data = {
+						action: "banPlayer",
+						playerId: event.target.value
+					}
+
+				// send
+					SOCKET.connection?.send(JSON.stringify(data))
+			} catch (error) {console.log(error)}
+		}
+
+/*** actions - all ***/
+	/* quitGame */
+		ELEMENTS["quit-game-button"]?.addEventListener(TRIGGERS.click, quitGame)
+		function quitGame(event) {
+			try {
+				// data
+					const data = {
+						action: "quitGame"
+					}
+
+				// send
+					SOCKET.connection?.send(JSON.stringify(data))
+			} catch (error) {console.log(error)}
+		}
+
+	/* capturePlayer */
+		function capturePlayer(playerId) {
+			try {
+				// data
+					const data = {
+						action: "capturePlayer",
+						playerId: playerId
+					}
+
+				// send
+					SOCKET.connection?.send(JSON.stringify(data))
+			} catch (error) {console.log(error)}
+		}

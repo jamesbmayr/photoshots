@@ -260,17 +260,19 @@
 					// game
 						case "game":
 							return {
-								id:              generateRandom(),
-								updated:         new Date().getTime(),
-								creatorId:       null,
+								id:               generateRandom(),
+								updated:          new Date().getTime(),
+								ownerId:          null,
 								mode: {
-									name:        null,
-									description: null
+									id:           null,
+									name:         null,
+									winCondition: null,
+									endCondition: null
 								},
-								timeStart:       0,
-								timeEnd:         0,
-								players:         {},
-								banned:          {}
+								timeStart:        0,
+								timeEnd:          0,
+								players:          {},
+								banned:           {}
 							}
 						break
 
@@ -406,9 +408,10 @@
 								passwordRegex: /^.{8,64}$/,
 								gamePathRegex: /^\/game\/[a-z]{8}$/,
 								idSet: "abcdefghijklmnopqrstuvwxyz",
-								idLength: 8,
-								minPlayers: 3,
-								maxPlayers: 16,
+								idLength: 8, // characters
+								minPlayers: 3, // players
+								maxPlayers: 16, // players
+								stunCooldown: 1000 * 30, // ms
 								gameModes: {
 									"fifteen_minutes_of_fame": {
 										name: "15 minutes of fame",
@@ -532,6 +535,7 @@
 		}
 
 	/* duplicateObject */
+		module.exports.duplicateObject = duplicateObject
 		function duplicateObject(obj) {
 			try {
 				if (typeof obj !== "object") {
