@@ -509,3 +509,94 @@
 				callback({success: false, message: `unable to ${arguments.callee.name}`})
 			}
 		}
+
+	/* recordGame */
+		module.exports.recordGame = recordGame
+		function recordGame(userId, game, callback) {
+			try {
+				// validate
+					if (!userId) {
+						callback({success: false, message: `no userId`})
+						return
+					}
+
+				// no game
+					if (!game || !game.players[userId]) {
+						callback({success: false, message: `no game`})
+						return
+					}
+
+				// query
+					const query = CORE.getSchema("query")
+						query.collection = "users"
+						query.command = "find"
+						query.filters = {id: userId}
+
+				// find
+					CORE.accessDatabase(query, results => {
+						if (!results.success) {
+							callback({success: false, message: `user not found`})
+							return
+						}
+
+						// user
+							const user = results.documents[0]
+
+						// new stats
+							const gameStats = {
+								id:       game.id,
+								mode:     game.mode.name,
+								timeEnd:  game.timeEnd,
+								shots:    game.players[userId].shots,
+								stuns:    game.players[userId].stuns,
+								timeIn:   game.players[userId].timeIn,
+								timeOut:  game.players[userId].timeOut,
+								win:      game.players[userId].win,
+								loss:     game.players[userId].loss
+							}
+
+							const allTimeStats = {
+								shots:    user.stats.shots   + gameStats.shots,
+								stuns:    user.stats.stuns   + gameStats.stuns,
+								timeIn:   user.stats.timeIn  + gameStats.timeIn,
+								timeOut:  user.stats.timeOut + gameStats.timeOut,
+								wins:     user.stats.wins    + (gameStats.win ? 1 : 0),
+								losses:   user.stats.losses  + (gameStats.loss ? 1 : 0)
+							}
+
+						// query
+							const query = CORE.getSchema("query")
+								query.collection = "users"
+								query.command = "find"
+								query.filters = {id: userId}
+								query.document = {
+									updated: new Date().getTime(),
+									[`games.${game.id}`]: gameStats,
+									stats: allTimeStats,
+									gameId: null
+								}
+
+						// update
+							CORE.accessDatabase(query, results => {
+								if (!results.success) {
+									callback({success: false, message: `unable to update game history`})
+									return
+								}
+
+								// update session
+									SESSION.setGame(userId, null, results => {
+										if (!results.success) {
+											callback({success: false, message: `unable to set game id`})
+											return
+										}
+
+										callback({success: true})
+									})
+							})
+					})
+			}
+			catch (error) {
+				CORE.logError(error)
+				callback({success: false, message: `unable to ${arguments.callee.name}`})
+			}
+		}

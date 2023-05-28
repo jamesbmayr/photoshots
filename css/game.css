@@ -5,11 +5,11 @@
 			display: none;
 		}
 
-		#container, #qr-code, #qrcode-container, #qrcode-container img {
+		#container, #qr-code, #qr-code-container, #qr-code-container img {
 			display: block !important;
 		}
 
-		#qrcode-container img {
+		#qr-code-container img {
 			position: absolute;
 			width: 100vw;
 			height: 100vw;

@@ -33,20 +33,12 @@
 			<div id="qr-code">
 				<h2>QR Code</h2>
 				<button id="qr-code-print-button">print QR Code</button>
-				<div id="qrcode-container"><script node>REQUEST.game.id</script node></div>
+				<div id="qr-code-container"><script node>REQUEST.game.id</script node></div>
 			</div>
 			<div id="game-state">
 				<h2>state</h2>
 				<div id="game-state-indicator">
-					<h3><script node>REQUEST.game.timeEnd ? "ended" : REQUEST.game.timeStart ? "playing" : "setting up"</script node></h3>
-				</div>
-				<div id="game-state-time-start">
-					<span>start: </span>
-					<span><script node>REQUEST.game.timeStart ? new Date(REQUEST.game.timeStart).toLocaleString() : "?"</script node></span>
-				</div>
-				<div id="game-state-time-end">
-					<span>end: </span>
-					<span><script node>REQUEST.game.timeEnd ? new Date(REQUEST.game.timeEnd).toLocaleString() : "?"</script node></span>
+					<script node>REQUEST.game.timeEnd ? `ended ${new Date(REQUEST.game.timeEnd).toLocaleString()}` : REQUEST.game.timeRemaining ? convertTime(REQUEST.game.timeRemaining) : `setting up`</script node>
 				</div>
 			</div>
 			<div id="game-mode">
@@ -70,7 +62,7 @@
 					<script node>
 						Object.keys(REQUEST.game.players).map(playerId => {
 							const player = REQUEST.game.players[playerId]
-							const status = REQUEST.game.timeEnd ? (player.win ? "win" : player.loss ? "loss" : "tie") :
+							const status = REQUEST.game.timeEnd ? (player.win ? "win" : player.loss ? "loss" : "unknown") :
 										   !player.connected ? "disconnected" :
 										   REQUEST.game.timeStart ? (player.cooldown ? "stunned" : player.target ? "in" : "out") :
 										   "ready"
@@ -82,19 +74,19 @@
 										"") +
 									`<li class="player-stat">` +
 										`<span>shots</span>` +
-										`<span>${player.shots}<span>` +
+										`<span class="player-stat-shots">${player.shots}<span>` +
 									`</li>` +
 									`<li class="player-stat">` +
 										`<span>stuns</span>` +
-										`<span>${player.stuns}<span>` +
+										`<span class="player-stat-stuns">${player.stuns}<span>` +
 									`</li>` +
 									`<li class="player-stat">` +
 										`<span>time in</span>` +
-										`<span>${player.timeIn}<span>` +
+										`<span class="player-stat-time-in">${player.timeIn}<span>` +
 									`</li>` +
 									`<li class="player-stat">` +
 										`<span>time out</span>` +
-										`<span>${player.timeOut}<span>` +
+										`<span class="player-stat-time-out">${player.timeOut}<span>` +
 									`</li>` +
 								`</div>`
 						}).join(`\n`)
@@ -102,5 +94,6 @@
 				</div>
 			</div>
 		</div>
+		<div id="reader"></div>
 	</body>
 </html>

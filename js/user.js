@@ -19,7 +19,7 @@
 			"update-password-button": document.querySelector("#update-password-button"),
 			"delete-password-input": document.querySelector("#delete-password-input"),
 			"delete-user-button": document.querySelector("#delete-user-button"),
-			"qrcode-container": document.querySelector("#qrcode-container"),
+			"qr-code-container": document.querySelector("#qr-code-container"),
 			"qr-code-print-button": document.querySelector("#qr-code-print-button")
 		}
 
@@ -129,10 +129,10 @@
 		function displayUserQRCode() {
 			try {
 				// get username
-					const username = ELEMENTS["qrcode-container"].innerText.trim()
+					const username = ELEMENTS["qr-code-container"].innerText.trim()
 
 				// generate code
-					displayQRCode(username, ELEMENTS["qrcode-container"])
+					displayQRCode(username, ELEMENTS["qr-code-container"])
 			} catch (error) {console.log(error)}
 		}
 
@@ -249,7 +249,7 @@
 		}
 
 /*** qr code reader ***/
-	/* scanCode */
+	/* startScanning */
 		ELEMENTS["join-camera-button"]?.addEventListener(TRIGGERS.click, startScanning)
 		function startScanning(event) {
 			try {
@@ -269,7 +269,7 @@
 			} catch (error) {console.log(error)}
 		}
 
-	/* startCamera */
+	/* startQRcodeDetector */
 		function startQRcodeDetector() {
 			try {
 				// get state

@@ -60,28 +60,36 @@
 		module.exports.getEnvironment = getEnvironment
 		function getEnvironment() {
 			try {
-				if (process.env.DOMAIN !== undefined) {
-					return {
-						port:            process.env.PORT,
-						domain:          process.env.DOMAIN,
-						debug:           process.env.DEBUG || false,
-						cache:           process.env.CACHE || false,
-						db_username:     process.env.DB_USERNAME,
-						db_password:     process.env.DB_PASSWORD,
-						db_url:          process.env.DB_URL,
-						db_name:         process.env.DB_NAME,
-						db:              `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_URL}`,
+				// univeral
+					const universal = {
 						db_cache: {
-							sessions:    {},
-							users:     {},
-							games:       {}
+							sessions: {},
+							users:    {},
+							games:    {}
 						},
 						ws_config: {
 							autoAcceptConnections: false
+						},
+						loops: {}
+					}
+
+				// hosted
+					if (process.env.DOMAIN !== undefined) {
+						return {
+							port:        process.env.PORT,
+							domain:      process.env.DOMAIN,
+							debug:       process.env.DEBUG || false,
+							cache:       process.env.CACHE || false,
+							db_username: process.env.DB_USERNAME,
+							db_password: process.env.DB_PASSWORD,
+							db_url:      process.env.DB_URL,
+							db_name:     process.env.DB_NAME,
+							db:          `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_URL}`,
+							...universal
 						}
 					}
-				}
-				else {
+				
+				// local
 					return {
 						port:            3000,
 						domain:          "localhost",
@@ -91,16 +99,8 @@
 						db_password:     null,
 						db_url:          null,
 						db_name:         null,
-						db_cache: {
-							sessions:    {},
-							users:     {},
-							games:       {}
-						},
-						ws_config: {
-							autoAcceptConnections: false
-						}
+						...universal
 					}
-				}
 			}
 			catch (error) {
 				logError(error)
@@ -267,9 +267,11 @@
 									id:           null,
 									name:         null,
 									winCondition: null,
-									endCondition: null
+									endCondition: null,
+									endStats:     []
 								},
 								timeStart:        0,
+								timeRemaining:    0,
 								timeEnd:          0,
 								players:          {},
 								banned:           {}
@@ -405,39 +407,58 @@
 							return {
 								userPathRegex: /^\/user\/[a-zA-Z0-9_]{8,16}$/,
 								userNameRegex: /^[a-zA-Z0-9_]{8,16}$/,
+								userNameLength: 16, // characters
+								userNameFillCharacter: "-",
 								passwordRegex: /^.{8,64}$/,
 								gamePathRegex: /^\/game\/[a-z]{8}$/,
 								idSet: "abcdefghijklmnopqrstuvwxyz",
 								idLength: 8, // characters
 								minPlayers: 3, // players
 								maxPlayers: 16, // players
-								stunCooldown: 1000 * 30, // ms
+								gameLoopInterval: 1000, // ms
+								stunCooldown: 30, // s
+								gameSeconds: 15 * 60, // s
 								gameModes: {
 									"fifteen_minutes_of_fame": {
 										name: "15 minutes of fame",
 										winCondition: "Player with the most shots at game end wins.",
-										endCondition: "Game ends after 15 minutes."
+										endCondition: "Game ends after 15 minutes.",
+										endStats: ["shots"]
 									},
 									"last_one_standing": {
 										name: "last one standing",
 										winCondition: "Last player in when everyone else is out wins.",
-										endCondition: "If no one wins after 15 minutes, most time in wins."
+										endCondition: "If no one wins after 15 minutes, most time in wins.",
+										endStats: ["timeIn"]
 									},
 									"ten_minutes_in": {
 										name: "10 min in",
 										winCondition: "First player to be in 10 minutes more than they're out wins.",
-										endCondition: "If no one wins after 15 minutes, most time in wins."
+										endCondition: "If no one wins after 15 minutes, most time in wins.",
+										endStats: ["timeIn"]
 									},
 									"straight_shooter": {
 										name: "str8 shooter",
 										winCondition: "First player to have 8 shots more than they have stuns wins.",
-										endCondition: "If no one wins after 15 minutes, most shots - stuns wins."
+										endCondition: "If no one wins after 15 minutes, most shots - stuns wins.",
+										endStats: ["shots", "stuns"]
 									},
 									"one_stun_done": {
 										name: "one stun done",
 										winCondition: "Last player to be stunned wins after each other player is stunned.",
-										endCondition: "If no one wins after 15 minutes, any players with 0 stuns win."
+										endCondition: "If no one wins after 15 minutes, most shots - stuns wins.",
+										endStats: ["shots", "stuns"]
 									}
+								},
+								gameMessages: {
+									[`_${5 * 60}`]: `5 minutes remaining`,
+									[`_${1 * 60}`]: `1 minute remaining`,
+									[`_${5}`]: `5`,
+									[`_${4}`]: `4`,
+									[`_${3}`]: `3`,
+									[`_${2}`]: `2`,
+									[`_${1}`]: `1`,
+									[`_${0}`]: `time's up!`,
 								}
 							}
 						break
@@ -1065,6 +1086,45 @@
 											})
 									})
 							})
+					}
+			}
+			catch (error) {
+				logError(error)
+				callback({success: false, message: `unable to ${arguments.callee.name}`})
+			}
+		}
+
+	/* accessLoops */
+		module.exports.accessLoops = accessLoops
+		function accessLoops(query, callback) {
+			try {
+				// invalid query
+					if (!query || !query.command || !query.id) {
+						return false
+					}
+					
+				// stop loop
+					if (query.command == "clear") {
+						clearInterval(ENVIRONMENT.loops[query.id])
+						delete ENVIRONMENT.loops[query.id]
+						return
+					}
+
+				// start loop
+					if (query.command == "set") {
+						// no loop function
+							if (!query.loopFunction || !query.interval) {
+								return
+							}
+
+						// clear existing
+							clearInterval(ENVIRONMENT.loops[query.id])
+
+						// start loop
+							ENVIRONMENT.loops[query.id] = setInterval(() => {
+								query.loopFunction(query.id, query.callbackFunction)
+							}, query.interval)
+							return
 					}
 			}
 			catch (error) {

@@ -62,7 +62,10 @@
 			<div id="qr-code">
 				<h2>QR Code</h2>
 				<button id="qr-code-print-button">print QR Code</button>
-				<div id="qrcode-container"><script node>REQUEST.user.name</script node></div>
+				<div id="qr-code-container"><script node>
+					const CONSTANTS = getAsset("constants");
+					(REQUEST.user.name + new Array(CONSTANTS.userNameLength).fill(CONSTANTS.userNameFillCharacter).join("")).slice(0, CONSTANTS.userNameLength)
+				</script node></div>
 			</div>
 			<div id="all-time">
 				<h2>All Time Stats</h2>
@@ -76,11 +79,11 @@
 				</div>
 				<div class="stat">
 					<span>time in</span>
-					<span><script node>REQUEST.user.stats.timeIn</script node><span>
+					<span><script node>convertTime(REQUEST.user.stats.timeIn)</script node><span>
 				</div>
 				<div class="stat">
 					<span>time out</span>
-					<span><script node>REQUEST.user.stats.timeOut</script node><span>
+					<span><script node>convertTime(REQUEST.user.stats.timeOut)</script node><span>
 				</div>
 				<div class="stat">
 					<span>wins</span>
@@ -92,40 +95,39 @@
 				</div>
 			</div>
 			<div id="game-history">
-				<h2>Game History</h2>
+				<h2><script node>`Games (${Object.keys(REQUEST.user.games).length})`</script node></h2>
 				<div id="games-list">
 					<script node>
-						if (!REQUEST.user.games.length) {
+						if (!Object.keys(REQUEST.user.games).length) {
 							`<span class="empty">no games</span>`
 						}
 						else {
-							Object.keys(REQUEST.user.games).map(gameId => {
-								const game = REQUEST.user.games[gameId]
-								const player = game.players[REQUEST.user.id]
+							Object.values(REQUEST.user.games).map(game => {
 								return `<div class="game">` +
 									`<h3>${game.id}</h3>` +
+									`<h4>${game.mode}</h4>` +
 									`<h4>${new Date(game.timeEnd).toLocaleString()}</h4>` +
 									`<li class="stat">` +
 										`<span>shots</span>` +
-										`<span>${player.shots}<span>` +
+										`<span>${game.shots}<span>` +
 									`</li>` +
 									`<li class="stat">` +
 										`<span>stuns</span>` +
-										`<span>${player.stuns}<span>` +
+										`<span>${game.stuns}<span>` +
 									`</li>` +
 									`<li class="stat">` +
 										`<span>time in</span>` +
-										`<span>${player.timeIn}<span>` +
+										`<span>${convertTime(game.timeIn)}<span>` +
 									`</li>` +
 									`<li class="stat">` +
 										`<span>time out</span>` +
-										`<span>${player.timeOut}<span>` +
+										`<span>${convertTime(game.timeOut)}<span>` +
 									`</li>` +
 									`<li class="stat">` +
 										`<span>final</span>` +
-										`<span>${player.win ? "win" : 
-												player.loss ? "loss" : 
-												"tie"}<span>` +
+										`<span>${game.win ? "win" : 
+												game.loss ? "loss" : 
+												"unknown"}<span>` +
 									`</li>` +
 								`</div>`
 							}).join(`\n`)

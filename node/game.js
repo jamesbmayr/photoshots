@@ -40,10 +40,8 @@
 
 						// random game mode
 							const gameModeId = CORE.chooseRandom(Object.keys(CONSTANTS.gameModes))
+								game.mode = CORE.duplicateObject(CONSTANTS.gameModes[gameModeId])
 								game.mode.id = gameModeId
-								game.mode.name = CONSTANTS.gameModes[gameModeId].name
-								game.mode.winCondition = CONSTANTS.gameModes[gameModeId].winCondition
-								game.mode.endCondition = CONSTANTS.gameModes[gameModeId].endCondition
 
 						// add player
 							const player = CORE.getSchema("player")
@@ -255,8 +253,13 @@
 									return
 								}
 
-								const game = results.documents[0]
-								callback({success: true, message: `${game.players[REQUEST.session.userId].name} ${connected ? "connected" : "disconnected"}`, game: game, recipients: Object.keys(game.players)})
+								// self
+									const game = results.documents[0]
+									callback({success: true, message: `${connected ? "connected" : "disconnected"}`, game: game, playerId: REQUEST.session.userId, recipients: [REQUEST.session.userId]})
+
+								// others
+									const otherPlayerIds = Object.keys(game.players).filter(playerId => playerId !== REQUEST.session.userId)
+									callback({success: true, message: `${game.players[REQUEST.session.userId].name} ${connected ? "connected" : "disconnected"}`, game: game, recipients: otherPlayerIds})
 							})
 					})
 			}
@@ -327,11 +330,9 @@
 								}
 
 						// reassign owner?
-							let ownerChanged = false
 							if (game.ownerId == REQUEST.session.userId) {
 								const otherPlayerIds = Object.keys(game.players).filter(playerId => playerId !== REQUEST.session.userId)
 								query.document.ownerId = otherPlayerIds ? otherPlayerIds[0] : null
-								ownerChanged = true
 							}
 
 						// update
@@ -364,16 +365,11 @@
 											
 										// update
 											CORE.accessDatabase(query, results => {})
-										return
+											return
 									}
 
 								// inform others
 									callback({success: true, message: `${username} quit the game`, game: updatedGame, recipients: Object.keys(updatedGame.players)})
-
-								// new owner?
-									if (ownerChanged && updatedGame.ownerId) {
-										callback({success: true, message: `upgraded to game owner`, game: updatedGame, owner: updatedGame.ownerId, recipients: [updatedGame.ownerId]})
-									}
 							})
 					})
 			}
@@ -694,7 +690,8 @@
 								query.filters = {id: gameId}
 								query.document = {
 									updated: new Date().getTime(),
-									timeStart: new Date().getTime()
+									timeStart: new Date().getTime(),
+									timeRemaining: CONSTANTS.gameSeconds
 								}
 
 						// targeting
@@ -716,7 +713,16 @@
 									const updatedGame = results.documents[0]
 
 								// inform others
-									callback({success: true, message: `game started`, start: true, game: updatedGame, recipients: Object.keys(updatedGame.players)})
+									callback({success: true, message: `game started`, game: updatedGame, recipients: Object.keys(updatedGame.players)})
+
+								// game loop
+									CORE.accessLoops({
+										command: "set",
+										loopFunction: updateGame,
+										id: updatedGame.id,
+										callbackFunction: callback,
+										interval: CONSTANTS.gameLoopInterval
+									})
 							})
 					})
 			}
@@ -826,7 +832,7 @@
 									[`players.${selfPlayer.userId}.shots`]: selfPlayer.shots + 1,
 									[`players.${selfPlayer.userId}.target`]: opponentPlayer.target
 								}
-								if (opponentTargeterId) {
+								if (opponentTargeterId && opponentTargeterId !== selfPlayer.userId) {
 									query.document[`players.${opponentTargeterId}.target`] = selfPlayer.userId
 								}
 
@@ -885,5 +891,315 @@
 			catch (error) {
 				CORE.logError(error)
 				callback({success: false, message: `unable to ${arguments.callee.name}`})
+			}
+		}
+
+	/* updateOne */
+		module.exports.updateOne = updateOne
+		function updateOne(gameId, callback) {
+			try {
+				// query
+					const query = CORE.getSchema("query")
+						query.collection = "games"
+						query.command = "find"
+						query.filters = {id: gameId}
+
+				// find
+					CORE.accessDatabase(query, results => {
+						if (!results.success) {
+							CORE.accessLoops({
+								command: "clear",
+								id: gameId
+							})
+							return
+						}
+
+						// game
+							const game = results.documents[0]
+
+						// already ended?
+							if (game.timeEnd) {
+								CORE.accessLoops({
+									command: "clear",
+									id: gameId
+								})
+								return
+							}
+
+						// time's up?
+							if (endOne(game, callback)) {
+								return
+							}
+
+						// early victory?
+							if (winOne(game, callback)) {
+								return
+							}
+
+						// query
+							const query = CORE.getSchema("query")
+								query.collection = "games"
+								query.command = "update"
+								query.filters = {id: gameId}
+								query.document = {
+									updated: new Date().getTime(),
+									timeRemaining: game.timeRemaining - 1, // s
+								}
+
+						// players
+							for (const player of game.players) {
+								// disconnected
+									if (!player.connected) {
+										continue
+									}
+
+								// cooldown
+									else if (player.cooldown) {
+										query.document[`players.${player.userId}.cooldown`] = Math.max(0, player.cooldown - 1)
+									}
+
+								// in or out?
+									else if (player.target) {
+										query.document[`players.${player.userId}.timeIn`] = player.timeIn + 1
+									}
+									else {
+										query.document[`players.${player.userId}.timeOut`] = player.timeOut + 1
+									}
+							}
+
+						// update
+							CORE.accessDatabase(query, results => {
+								if (!results.success) {
+									return
+								}
+
+								// updated game
+									const updatedgame = results.documents[0]
+									const message = CONSTANTS.gameMessages[`_${updatedGame.timeRemaining}`]
+
+								// update players
+									if (message) {
+										callback({success: true, message: message, game: updatedGame, recipients: Object.keys(updatedGame.players)})
+									}
+									else {
+										callback({success: true, game: updatedGame, recipients: Object.keys(updatedGame.players)})
+									}
+
+
+							})
+					})
+			}
+			catch (error) {
+				CORE.logError(error)
+				callback({success: false, message: `unable to ${arguments.callee.name}`, recipients: [REQUEST.session.userId]})
+			}
+		}
+
+	/* endOne */
+		module.exports.endOne = endOne
+		function endOne(game, callback) {
+			try {
+				// still time remaining
+					if (game.timeRemaining > 0) {
+						return false
+					}
+
+				// stop loop
+					CORE.accessLoops({
+						command: "clear",
+						id: game.id
+					})
+
+				// determine scores
+					const mostStat  = game.mode.endStats[0]
+					const leastStat = game.mode.endStats[1] || null
+					const playerScores = {}
+					for (const player of game.players) {
+						playerScores[player.userId] = player[mostStat] - (leastStat ? player[leastStat] : 0)
+					}
+
+				// determine winners
+					const highestScore = Object.values(playerScores).sort().reverse()[0]
+					const winners = Object.keys(playerScores).filter(playerId => playerScores[playerId] == highestScore)
+					const losers = Object.keys(playerScores).filter(playerId => playerScores[playerId] !== highestScore)
+
+				// query
+					const query = CORE.getSchema("query")
+						query.collection = "games"
+						query.command = "update"
+						query.filters = {id: game.id}
+						query.document = {
+							updated: new Date().getTime(),
+							timeEnd: new Date().getTime(),
+							timeRemaining: 0
+						}
+
+				// players
+					for (const player of game.players) {
+						query.document[`players.${player.userId}.cooldown`] = 0
+						query.document[`players.${player.userId}.target`] = null
+
+						if (winners.includes(player.userId)) {
+							query.document[`players.${player.userId}.win`] = true
+						}
+						else if (losers.includes(player.userId)) {
+							query.document[`players.${player.userId}.loss`] = true
+						}
+					}
+
+				// update
+					CORE.accessDatabase(query, results => {
+						if (!results.success) {
+							return
+						}
+
+						// send to players
+							const updatedgame = results.documents[0]
+							callback({success: true, message: `win for ${winners.join(" & ")}`, game: updatedGame, recipients: Object.keys(updatedGame.players)})
+
+						// update users' game history (and remove from game)
+							for (const player of updatedGame.players) {
+								USER.recordGame(player.userId, updatedGame, results => {
+									if (!results.success) {
+										callback({success: false, message: results.message, recipients: [player.userId]})
+									}
+								})
+							}
+					})
+
+				// don't continue updating game
+					return true
+			}
+			catch (error) {
+				CORE.logError(error)
+				callback({success: false, message: `unable to ${arguments.callee.name}`, recipients: [REQUEST.session.userId]})
+			}
+		}
+
+	/* winOne */
+		module.exports.winOne = winOne
+		function winOne(game, callback) {
+			try {
+				// winners & losers
+					const winners = []
+					const losers = []
+
+				// victory conditions
+					switch (game.mode.id) {
+						// fifteen_minutes_of_fame
+							case "fifteen_minutes_of_fame":
+								return false
+							break
+						
+						// last_one_standing
+							case "last_one_standing":
+								const playerInIds  = Object.keys(game.players).filter(playerId => game.players[playerId].target)
+								if (playerInIds.length !== 1) {
+									return false
+								}
+
+								winners.push(playerInIds[0])
+								losers.push(Object.keys(game.players).filter(playerId => playerId !== playerInIds[0]))
+							break
+
+						// ten_minutes_in
+							case "ten_minutes_in":
+								const tenMinInId = Object.keys(game.players).find(playerId => {
+									return (game.players[playerId].timeIn - game.players[playerId].timeOut > 10 * 60) // s
+								}) || null
+								if (!tenMinInId) {
+									return false
+								}
+
+								winners.push(tenMinInId)
+								losers.push(Object.keys(game.players).filter(playerId => playerId !== tenMinInId))
+							break
+
+						// straight_shooter
+							case "straight_shooter":
+								const shooterId = Object.keys(game.players).find(playerId => {
+									return (game.players[playerId].shots - game.players[playerId].stuns > 8) // shots
+								}) || null
+								if (!shooterId) {
+									return false
+								}
+
+								winners.push(shooterId)
+								losers.push(Object.keys(game.players).filter(playerId => playerId !== shooterId))
+							break
+
+						// one_stun_done
+							case "one_stun_done":
+								const unstunnedIds = Object.keys(game.playres).filter(playerId => !game.players[playerId].stuns)
+								if (unstunnedIds !== 1) {
+									return false
+								}
+
+								winners.push(unstunnedIds[0])
+								losers.push(Object.keys(game.players).filter(playerId => playerId !== unstunnedIds[0]))
+							break
+
+						// invalid
+							default:
+								return false
+							break
+					}
+
+				// stop loop
+					CORE.accessLoops({
+						command: "clear",
+						id: game.id
+					})
+
+				// query
+					const query = CORE.getSchema("query")
+						query.collection = "games"
+						query.command = "update"
+						query.filters = {id: game.id}
+						query.document = {
+							updated: new Date().getTime(),
+							timeEnd: new Date().getTime(),
+							timeRemaining: 0
+						}
+
+				// players
+					for (const player of game.players) {
+						query.document[`players.${player.userId}.cooldown`] = 0
+						query.document[`players.${player.userId}.target`] = null
+
+						if (winners.includes(player.userId)) {
+							query.document[`players.${player.userId}.win`] = true
+						}
+						else if (losers.includes(player.userId)) {
+							query.document[`players.${player.userId}.loss`] = true
+						}
+					}
+
+				// update
+					CORE.accessDatabase(query, results => {
+						if (!results.success) {
+							return
+						}
+
+						// send to players
+							const updatedgame = results.documents[0]
+							callback({success: true, message: `win for ${winners.join(" & ")}`, game: updatedGame, recipients: Object.keys(updatedGame.players)})
+
+						// update users' game history (and remove from game)
+							for (const player of updatedGame.players) {
+								USER.recordGame(player.userId, updatedGame, results => {
+									if (!results.success) {
+										callback({success: false, message: results.message, recipients: [player.userId]})
+									}
+								})
+							}
+					})
+
+				// don't continue updating game
+					return true
+			}
+			catch (error) {
+				CORE.logError(error)
+				callback({success: false, message: `unable to ${arguments.callee.name}`, recipients: [REQUEST.session.userId]})
 			}
 		}
