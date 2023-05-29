@@ -128,6 +128,12 @@
 								return
 							}
 
+						// already started?
+							if (game.timeStart && !game.players[REQUEST.session.userId]) {
+								callback({success: false, message: `game already started`})
+								return
+							}
+
 						// too many players
 							if (!game.players[REQUEST.session.userId] && Object.keys(game.players).length >= CONSTANTS.maxPlayers) {
 								callback({success: false, message: `game is at maximum player count (${CONSTANTS.maxPlayers})`})
@@ -231,8 +237,15 @@
 						}
 
 						// not a player
-							if (!results.documents[0].players[REQUEST.session.userId]) {
+							const game = results.documents[0]
+							if (!game.players[REQUEST.session.userId]) {
 								callback({success: false, message: `not a player`, recipients: [REQUEST.session.userId]})
+								return
+							}
+
+						// game a player
+							if (game.timeEnd) {
+								callback({success: false, message: `game ended`, recipients: [REQUEST.session.userId]})
 								return
 							}
 
@@ -254,12 +267,12 @@
 								}
 
 								// self
-									const game = results.documents[0]
-									callback({success: true, message: `${connected ? "connected" : "disconnected"}`, game: game, playerId: REQUEST.session.userId, recipients: [REQUEST.session.userId]})
+									const updatedGame = results.documents[0]
+									callback({success: true, message: `${connected ? "connected" : "disconnected"}`, game: updatedGame, playerId: REQUEST.session.userId, recipients: [REQUEST.session.userId]})
 
 								// others
-									const otherPlayerIds = Object.keys(game.players).filter(playerId => playerId !== REQUEST.session.userId)
-									callback({success: true, message: `${game.players[REQUEST.session.userId].name} ${connected ? "connected" : "disconnected"}`, game: game, recipients: otherPlayerIds})
+									const otherPlayerIds = Object.keys(updatedGame.players).filter(playerId => playerId !== REQUEST.session.userId)
+									callback({success: true, message: `${updatedGame.players[REQUEST.session.userId].name} ${connected ? "connected" : "disconnected"}`, game: updatedGame, recipients: otherPlayerIds})
 							})
 					})
 			}
@@ -410,6 +423,12 @@
 								return
 							}
 
+						// game ended
+							if (game.timeEnd) {
+								callback({success: false, message: `game already ended`, recipients: [REQUEST.session.userId]})
+								return
+							}
+
 						// all users
 							const userIds = Object.keys(game.players)
 
@@ -429,7 +448,7 @@
 								// update users
 									for (const userId of userIds) {
 										USER.setGame(userId, null, data => {
-											callback({success: false, message: `game deleted`, close: true, recipients: [userId]})
+											callback({success: false, close: true, message: `game deleted`, recipients: [userId]})
 											return
 										})
 									}
@@ -620,7 +639,7 @@
 											return
 										}
 										
-										callback({success: true, close: true, message: `banned from game ${updatedGame.id}`, location: `/user/${username}`, recipients: [REQUEST.post.playerId]})
+										callback({success: true, close: true, message: `banned from game ${updatedGame.id}`, recipients: [REQUEST.post.playerId]})
 									})
 
 								// inform others
@@ -718,7 +737,7 @@
 								// game loop
 									CORE.accessLoops({
 										command: "set",
-										loopFunction: updateGame,
+										loopFunction: iterateOne,
 										id: updatedGame.id,
 										callbackFunction: callback,
 										interval: CONSTANTS.gameLoopInterval
@@ -769,6 +788,7 @@
 						}
 
 						// game ended
+							const game = results.documents[0]
 							if (game.timeEnd) {
 								callback({success: false, message: `game already ended`, recipients: [REQUEST.session.userId]})
 								return
@@ -894,9 +914,9 @@
 			}
 		}
 
-	/* updateOne */
-		module.exports.updateOne = updateOne
-		function updateOne(gameId, callback) {
+	/* iterateOne */
+		module.exports.iterateOne = iterateOne
+		function iterateOne(gameId, callback) {
 			try {
 				// query
 					const query = CORE.getSchema("query")
@@ -947,23 +967,24 @@
 								}
 
 						// players
-							for (const player of game.players) {
+							for (const playerId in game.players) {
 								// disconnected
+									const player = game.players[playerId]
 									if (!player.connected) {
 										continue
 									}
 
 								// cooldown
 									else if (player.cooldown) {
-										query.document[`players.${player.userId}.cooldown`] = Math.max(0, player.cooldown - 1)
+										query.document[`players.${playerId}.cooldown`] = Math.max(0, player.cooldown - 1)
 									}
 
 								// in or out?
 									else if (player.target) {
-										query.document[`players.${player.userId}.timeIn`] = player.timeIn + 1
+										query.document[`players.${playerId}.timeIn`] = player.timeIn + 1
 									}
 									else {
-										query.document[`players.${player.userId}.timeOut`] = player.timeOut + 1
+										query.document[`players.${playerId}.timeOut`] = player.timeOut + 1
 									}
 							}
 
@@ -974,7 +995,7 @@
 								}
 
 								// updated game
-									const updatedgame = results.documents[0]
+									const updatedGame = results.documents[0]
 									const message = CONSTANTS.gameMessages[`_${updatedGame.timeRemaining}`]
 
 								// update players
@@ -984,14 +1005,12 @@
 									else {
 										callback({success: true, game: updatedGame, recipients: Object.keys(updatedGame.players)})
 									}
-
-
 							})
 					})
 			}
 			catch (error) {
 				CORE.logError(error)
-				callback({success: false, message: `unable to ${arguments.callee.name}`, recipients: [REQUEST.session.userId]})
+				return
 			}
 		}
 
@@ -1014,8 +1033,9 @@
 					const mostStat  = game.mode.endStats[0]
 					const leastStat = game.mode.endStats[1] || null
 					const playerScores = {}
-					for (const player of game.players) {
-						playerScores[player.userId] = player[mostStat] - (leastStat ? player[leastStat] : 0)
+					for (const playerId in game.players) {
+						const player = game.players[playerId]
+						playerScores[playerId] = player[mostStat] - (leastStat ? player[leastStat] : 0)
 					}
 
 				// determine winners
@@ -1035,15 +1055,15 @@
 						}
 
 				// players
-					for (const player of game.players) {
-						query.document[`players.${player.userId}.cooldown`] = 0
-						query.document[`players.${player.userId}.target`] = null
+					for (const playerId in game.players) {
+						query.document[`players.${playerId}.cooldown`] = 0
+						query.document[`players.${playerId}.target`] = null
 
-						if (winners.includes(player.userId)) {
-							query.document[`players.${player.userId}.win`] = true
+						if (winners.includes(playerId)) {
+							query.document[`players.${playerId}.win`] = true
 						}
-						else if (losers.includes(player.userId)) {
-							query.document[`players.${player.userId}.loss`] = true
+						else if (losers.includes(playerId)) {
+							query.document[`players.${playerId}.loss`] = true
 						}
 					}
 
@@ -1054,14 +1074,15 @@
 						}
 
 						// send to players
-							const updatedgame = results.documents[0]
-							callback({success: true, message: `win for ${winners.join(" & ")}`, game: updatedGame, recipients: Object.keys(updatedGame.players)})
+							const updatedGame = results.documents[0]
+							const winnerNames = winners.map(winnerId => updatedGame.players[winnerId].name)
+							callback({success: true, message: `win for ${winnerNames.join(" & ")}`, game: updatedGame, recipients: Object.keys(updatedGame.players)})
 
 						// update users' game history (and remove from game)
-							for (const player of updatedGame.players) {
-								USER.recordGame(player.userId, updatedGame, results => {
+							for (const playerId in updatedGame.players) {
+								USER.recordGame(playerId, updatedGame, results => {
 									if (!results.success) {
-										callback({success: false, message: results.message, recipients: [player.userId]})
+										callback({success: false, message: results.message, recipients: [playerId]})
 									}
 								})
 							}
@@ -1072,7 +1093,7 @@
 			}
 			catch (error) {
 				CORE.logError(error)
-				callback({success: false, message: `unable to ${arguments.callee.name}`, recipients: [REQUEST.session.userId]})
+				return false
 			}
 		}
 
@@ -1099,7 +1120,7 @@
 								}
 
 								winners.push(playerInIds[0])
-								losers.push(Object.keys(game.players).filter(playerId => playerId !== playerInIds[0]))
+								losers.push(...Object.keys(game.players).filter(playerId => playerId !== playerInIds[0]))
 							break
 
 						// ten_minutes_in
@@ -1112,7 +1133,7 @@
 								}
 
 								winners.push(tenMinInId)
-								losers.push(Object.keys(game.players).filter(playerId => playerId !== tenMinInId))
+								losers.push(...Object.keys(game.players).filter(playerId => playerId !== tenMinInId))
 							break
 
 						// straight_shooter
@@ -1125,18 +1146,18 @@
 								}
 
 								winners.push(shooterId)
-								losers.push(Object.keys(game.players).filter(playerId => playerId !== shooterId))
+								losers.push(...Object.keys(game.players).filter(playerId => playerId !== shooterId))
 							break
 
 						// one_stun_done
 							case "one_stun_done":
-								const unstunnedIds = Object.keys(game.playres).filter(playerId => !game.players[playerId].stuns)
-								if (unstunnedIds !== 1) {
+								const unstunnedIds = Object.keys(game.players).filter(playerId => !game.players[playerId].stuns)
+								if (unstunnedIds.length !== 1) {
 									return false
 								}
 
 								winners.push(unstunnedIds[0])
-								losers.push(Object.keys(game.players).filter(playerId => playerId !== unstunnedIds[0]))
+								losers.push(...Object.keys(game.players).filter(playerId => playerId !== unstunnedIds[0]))
 							break
 
 						// invalid
@@ -1163,15 +1184,15 @@
 						}
 
 				// players
-					for (const player of game.players) {
-						query.document[`players.${player.userId}.cooldown`] = 0
-						query.document[`players.${player.userId}.target`] = null
+					for (const playerId in game.players) {
+						query.document[`players.${playerId}.cooldown`] = 0
+						query.document[`players.${playerId}.target`] = null
 
-						if (winners.includes(player.userId)) {
-							query.document[`players.${player.userId}.win`] = true
+						if (winners.includes(playerId)) {
+							query.document[`players.${playerId}.win`] = true
 						}
-						else if (losers.includes(player.userId)) {
-							query.document[`players.${player.userId}.loss`] = true
+						else if (losers.includes(playerId)) {
+							query.document[`players.${playerId}.loss`] = true
 						}
 					}
 
@@ -1182,14 +1203,15 @@
 						}
 
 						// send to players
-							const updatedgame = results.documents[0]
-							callback({success: true, message: `win for ${winners.join(" & ")}`, game: updatedGame, recipients: Object.keys(updatedGame.players)})
+							const updatedGame = results.documents[0]
+							const winnerNames = winners.map(winnerId => updatedGame.players[winnerId].name)
+							callback({success: true, message: `win for ${winnerNames.join(" & ")}`, game: updatedGame, recipients: Object.keys(updatedGame.players)})
 
 						// update users' game history (and remove from game)
-							for (const player of updatedGame.players) {
-								USER.recordGame(player.userId, updatedGame, results => {
+							for (const playerId in updatedGame.players) {
+								USER.recordGame(playerId, updatedGame, results => {
 									if (!results.success) {
-										callback({success: false, message: results.message, recipients: [player.userId]})
+										callback({success: false, message: results.message, recipients: [playerId]})
 									}
 								})
 							}
@@ -1200,6 +1222,6 @@
 			}
 			catch (error) {
 				CORE.logError(error)
-				callback({success: false, message: `unable to ${arguments.callee.name}`, recipients: [REQUEST.session.userId]})
+				return false
 			}
 		}

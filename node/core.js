@@ -408,7 +408,7 @@
 								userPathRegex: /^\/user\/[a-zA-Z0-9_]{8,16}$/,
 								userNameRegex: /^[a-zA-Z0-9_]{8,16}$/,
 								userNameLength: 16, // characters
-								userNameFillCharacter: "-",
+								userNameFillCharacter: " ",
 								passwordRegex: /^.{8,64}$/,
 								gamePathRegex: /^\/game\/[a-z]{8}$/,
 								idSet: "abcdefghijklmnopqrstuvwxyz",

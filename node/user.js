@@ -567,7 +567,7 @@
 						// query
 							const query = CORE.getSchema("query")
 								query.collection = "users"
-								query.command = "find"
+								query.command = "update"
 								query.filters = {id: userId}
 								query.document = {
 									updated: new Date().getTime(),

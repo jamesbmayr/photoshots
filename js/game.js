@@ -15,7 +15,7 @@
 			"qr-code-container": document.querySelector("#qr-code-container"),
 			"qr-code-print-button": document.querySelector("#qr-code-print-button"),
 			"game-state": document.querySelector("#game-state"),
-			"game-state-indicator": document.querySelector("#state-indicator"),
+			"game-state-indicator": document.querySelector("#game-state-indicator"),
 			"game-mode": document.querySelector("#game-mode"),
 			"game-mode-name": document.querySelector("#game-mode-name"),
 			"game-mode-select": document.querySelector("#game-mode-select"),
@@ -23,7 +23,7 @@
 			"game-mode-end-condition": document.querySelector("#game-mode-end-condition"),
 			"players-list": document.querySelector("#players-list"),
 			"players-list-items": Array.from(document.querySelectorAll(".player")),
-			"players-ban-buttons": Array.from(document.querySelectorAll(".player-ban")),
+			"players-ban-buttons": Array.from(document.querySelectorAll(".player-ban"))
 		}
 
 	/* state */
@@ -32,7 +32,13 @@
 			captureWaitTimeout: null,
 			captureWaitMS: 2000, // ms
 			game: {
-				id: ELEMENTS["qr-code-container"].innerText.trim()
+				id: ELEMENTS["qr-code-container"].innerText.trim(),
+				ownerId:       null,
+				mode:          {},
+				timeStart:     0,
+				timeRemaining: 0,
+				timeEnd:       0,
+				players:       {}
 			}
 		}
 
@@ -146,7 +152,9 @@
 
 				// disconnect
 					SOCKET.connection.onerror = error => {
-						showToast({success: false, message: error})
+						SOCKET.connection.onclose = () => {}
+						clearInterval(SOCKET.createLoop)
+						window.location = "/"
 					}
 					SOCKET.connection.onclose = () => {
 						showToast({success: false, message: `disconnected`})
@@ -191,41 +199,44 @@
 
 	/* receiveSocket */
 		function receiveSocket(data) {
-				try {
-					// meta
-						// redirect
-							if (data.location) {
-								window.location = data.location
-								return
+			try {
+				// redirect
+					if (data.location) {
+						window.location = data.location
+						return
+					}
+					
+				// failure
+					if (!data || !data.success) {
+						showToast({success: false, message: data.message || `unknown websocket error`})
+
+						// force close
+							if (data.close) {
+								SOCKET.connection.onclose = () => {}
+								SOCKET.connection.close()
+
+								setTimeout(() => {
+									window.location = "/"
+								}, 2000) // ms
 							}
-							
-						// failure
-							if (!data || !data.success) {
-								showToast({success: false, message: data.message || `unknown websocket error`})
+						return
+					}
 
-								// force close
-									if (data.close) {
-										SOCKET.connection.onclose = () => {}
-										SOCKET.connection.close()
-									}
-								return
-							}
+				// toast
+					if (data.message) {
+						showToast(data)
+					}
 
-						// toast
-							if (data.message) {
-								showToast(data)
-							}
+				// data
+					if (data.playerId) {
+						STATE.playerId = data.playerId
+					}
 
-					// data
-						if (data.player) {
-							STATE.playerId = data.player
-						}
-
-						if (data.game) {
-							displayGame(data.game)
-						}
-				} catch (error) {console.log(error)}
-			}
+					if (data.game) {
+						displayGame(data.game)
+					}
+			} catch (error) {console.log(error)}
+		}
 
 /*** display ***/
 	/* displayGameQRCode */
@@ -233,7 +244,7 @@
 		function displayGameQRCode() {
 			try {
 				// get gameId
-					const gameId = ELEMENTS["qr-code-container"].innerText.trim()
+					const gameId = ELEMENTS["qr-code-container"].innerHTML
 
 				// generate code
 					displayQRCode(gameId, ELEMENTS["qr-code-container"])
@@ -256,48 +267,56 @@
 					}
 
 				// mode
-					if (data.game.mode.id !== STATE.game.mode?.id) {
-						if (!document.activeElement || document.activeElement !== ELEMENTS["game-mode-select"]) {
-							STATE.game.mode = data.game.mode
-							ELEMENTS["game-mode-select"].value = STATE.game.mode.id
-							ELEMENTS["game-mode-win-condition"].innerHTML = STATE.game.mode.winCondition
-							ELEMENTS["game-mode-end-condition"].innerHTML = STATE.game.mode.endCondition
-						}
+					if (data.mode.id !== STATE.game.mode?.id) {
+						STATE.game.mode = data.mode
+						ELEMENTS["game-mode-select"].value = STATE.game.mode.id
+						ELEMENTS["game-mode-win-condition"].innerHTML = STATE.game.mode.winCondition
+						ELEMENTS["game-mode-end-condition"].innerHTML = STATE.game.mode.endCondition
 					}
 
-				// players
-					// upsert
-						for (const player of data.game.players) {
-							displayPlayer(player)
-						}
-
-					// remove quitters
-						for (const player of STATE.game.players) {
-							if (!data.game.players[player.userId]) {
-								delete STATE.game.players[player.userId]
-								const playerElement = ELEMENTS["players-list-items"].find(element => element.id == `player-${player.userId}`)
-									playerElement?.remove()
-							}
-						}
-
 				// time
+					// end
+						if (data.timeEnd !== STATE.game.timeEnd) {
+							STATE.game.timeEnd = data.timeEnd
+							ELEMENTS["quit-game-button"]?.remove()
+							ELEMENTS["delete-game-button"]?.remove()
+							ELEMENTS["players-ban-buttons"]?.forEach(element => element.remove())
+							ELEMENTS["game-state-indicator"].innerHTML = `ended ${new Date(STATE.game.timeEnd).toLocaleString()}`
+							stopScanning()
+						}
+
 					// start
-						if (data.game.timeStart !== STATE.game.timeStart) {
-							STATE.game.timeStart = data.game.timeStart
+						if (data.timeStart !== STATE.game.timeStart) {
+							STATE.game.timeStart = data.timeStart
+							ELEMENTS["game-mode-select"]?.setAttribute("disabled", true)
+							ELEMENTS["start-game-button"]?.remove()
 							startScanning()
 						}
 
 					// remaining
-						if (data.game.timeRemaining !== STATE.game.timeRemaining) {
-							STATE.game.timeRemaining = data.game.timeRemaining
-							ELEMENTS["game-state-indicator"].innerHTML = STATE.game.timeRemaining
+						if (data.timeRemaining) {
+							STATE.game.timeRemaining = data.timeRemaining
+							ELEMENTS["game-state-indicator"].innerHTML = convertTime(STATE.game.timeRemaining)
 						}
 
-					// end
-						if (data.game.timeEnd !== STATE.game.timeEnd) {
-							STATE.game.timeEnd = data.game.timeEnd
-							stopScanning()
+				// players
+					// upsert data
+						for (const playerId in data.players) {
+							STATE.game.players[playerId] = data.players[playerId]
 						}
+
+					// display
+						for (const playerId in STATE.game.players) {
+							// remove quitters
+								if (!data.players[playerId]) {
+									removePlayer(playerId)
+								}
+
+							// display
+								displayPlayer(STATE.game.players[playerId])
+						}
+
+					
 			} catch (error) {console.log(error)}
 		}
 	
@@ -347,7 +366,7 @@
 		function displayBanButton(playerElement) {
 			try {
 				// not self
-					const playerId = playerElement.id.split("-")[0]
+					const playerId = playerElement.id.split("-")[1]
 					if (playerId == STATE.playerId) {
 						return
 					}
@@ -367,32 +386,48 @@
 		function displayPlayer(player) {
 			try {
 				// playerId
-					const playerId = player.userId
 					const status = STATE.game.timeEnd ? (player.win ? "win" : player.loss ? "loss" : "unknown") :
 								   !player.connected ? "disconnected" :
-								   STATE.game.timeStart ? (player.cooldown ? "stunned" : player.target ? "in" : "out") :
+								   STATE.game.timeStart ? (player.cooldown ? `stunned (${player.cooldown})` : (player.target ? "in" : "out")) :
 								   "ready"
 
-				// not in game data
-					if (!STATE.game.players[playerId]) {
-						STATE.game.players[playerId] = player
-					}
-
 				// existing playerElement
-					const playerElement = ELEMENTS["players-list-items"].find(element => element.id == `player-${playerId}`)
+					const playerElement = ELEMENTS["players-list-items"].find(element => element.id == `player-${player.userId}`)
 					if (playerElement) {
-						playerElement.querySelector(".player-status")?.innerHTML = status
-						playerElement.querySelector(".player-stat-shots")?.innerHTML = player.shots
-						playerElement.querySelector(".player-stat-stuns")?.innerHTML = player.stuns
-						playerElement.querySelector(".player-stat-time-in")?.innerHTML = player.timeIn
-						playerElement.querySelector(".player-stat-time-out")?.innerHTML = player.timeOut
+						playerElement.querySelector(".player-status").innerHTML = status
+						playerElement.querySelector(".player-stat-target").innerHTML = player.target ? (STATE.game.players[player.target]?.name || "?") : "-"
+						playerElement.querySelector(".player-stat-shots").innerHTML = player.shots
+						playerElement.querySelector(".player-stat-stuns").innerHTML = player.stuns
+						playerElement.querySelector(".player-stat-time-in").innerHTML = convertTime(player.timeIn)
+						playerElement.querySelector(".player-stat-time-out").innerHTML = convertTime(player.timeOut)
 						return
 					}
 
 				// new playerElement
+					buildPlayer(player, status)
+			} catch (error) {console.log(error)}
+		}
+
+	/* removePlayer */
+		function removePlayer(playerId) {
+			try {
+				// remove from data
+					delete STATE.game.players[playerId]
+
+				// remove element
+					const playerElement = ELEMENTS["players-list-items"].find(element => element.id == `player-${playerId}`)
+						playerElement?.remove()
+					ELEMENTS["players-list-items"] = ELEMENTS["players-list-items"].filter(element => element !== playerElement)
+			} catch (error) {console.log(error)}
+		}
+
+	/* buildPlayer */
+		function buildPlayer(player, status) {
+			try {
+				// new playerElement
 					const newPlayerElement = document.createElement("div")
 						newPlayerElement.className = "player"
-						newPlayerElement.id = `player-${playerId}`
+						newPlayerElement.id = `player-${player.userId}`
 					ELEMENTS["players-list"].appendChild(newPlayerElement)
 					ELEMENTS["players-list-items"].push(newPlayerElement)
 
@@ -407,7 +442,19 @@
 						playerStatus.innerHTML = status
 					newPlayerElement.appendChild(playerStatus)
 				
-				// stats
+				// target
+					const playerTarget = document.createElement("li")
+						playerTarget.className = "player-stat"
+					newPlayerElement.appendChild(playerTarget)
+						const playerTargetLabel = document.createElement("span")
+							playerTargetLabel.innerHTML = "target"
+						playerTarget.appendChild(playerTargetLabel)
+						const playerTargetValue = document.createElement("span")
+							playerTargetValue.className = "player-stat-target"
+							playerTargetValue.innerHTML = player.target ? (STATE.game.players[player.target]?.name || "?") : "-"
+						playerTarget.appendChild(playerTargetValue)
+
+				// shots
 					const playerShots = document.createElement("li")
 						playerShots.className = "player-stat"
 					newPlayerElement.appendChild(playerShots)
@@ -418,7 +465,8 @@
 							playerShotsValue.className = "player-stat-shots"
 							playerShotsValue.innerHTML = player.shots
 						playerShots.appendChild(playerShotsValue)
-					
+				
+				// stuns
 					const playerStuns = document.createElement("li")
 						playerStuns.className = "player-stat"
 					newPlayerElement.appendChild(playerStuns)
@@ -430,6 +478,7 @@
 							playerStunsValue.innerHTML = player.stuns
 						playerStuns.appendChild(playerStunsValue)
 
+				// time in
 					const playerTimeIn = document.createElement("li")
 						playerTimeIn.className = "player-stat"
 					newPlayerElement.appendChild(playerTimeIn)
@@ -438,9 +487,10 @@
 						playerTimeIn.appendChild(playerTimeInLabel)
 						const playerTimeInValue = document.createElement("span")
 							playerTimeInValue.className = "player-stat-time-in"
-							playerTimeInValue.innerHTML = player.timeIn
+							playerTimeInValue.innerHTML = convertTime(player.timeIn)
 						playerTimeIn.appendChild(playerTimeInValue)
 
+				// time out
 					const playerTimeOut = document.createElement("li")
 						playerTimeOut.className = "player-stat"
 					newPlayerElement.appendChild(playerTimeOut)
@@ -449,11 +499,11 @@
 						playerTimeOut.appendChild(playerTimeOutLabel)
 						const playerTimeOutValue = document.createElement("span")
 							playerTimeOutValue.className = "player-stat-time-out"
-							playerTimeOutValue.innerHTML = player.timeOut
+							playerTimeOutValue.innerHTML = convertTime(player.timeOut)
 						playerTimeOut.appendChild(playerTimeOutValue)
 
 				// ban button
-					if (!STATE.game.timeEnd && STATE.playerId && STATE.game.ownerId == STATE.playerId && STATE.playerId !== playerId) {
+					if (!STATE.game.timeEnd && STATE.playerId && STATE.game.ownerId == STATE.playerId && STATE.playerId !== player.userId) {
 						displayBanButton(newPlayerElement)
 					}
 			} catch (error) {console.log(error)}
@@ -534,8 +584,16 @@
 		}
 
 	/* capturePlayer */
-		function capturePlayer(playerId) {
+		function capturePlayer(text) {
 			try {
+				// name --> id
+					const name = text.trim()
+					const playerId = Object.keys(STATE.game.players).find(playerId => STATE.game.players[playerId].name == name)
+					if (!playerId) {
+						showToast({success: false, message: `unknown player`})
+						return
+					}
+
 				// data
 					const data = {
 						action: "capturePlayer",
@@ -553,6 +611,11 @@
 			try {
 				// not a player
 					if (!STATE.playerId) {
+						return
+					}
+
+				// already ended
+					if (STATE.game.timeEnd) {
 						return
 					}
 
@@ -580,16 +643,13 @@
 					clearTimeout(STATE.captureWaitTimeout)
 					STATE.captureWaitTimeout = null
 
-				// get state
-					const qrCodeReaderState = ELEMENTS["qr-code-reader"].getState()
-
 				// scanning --> return
-					if (qrCodeReaderState == 2) { // SCANNING
+					if (ELEMENTS["qr-code-reader"].getState() == 2) { // SCANNING
 						return
 					}
 
 				// paused --> resume
-					if (qrCodeReaderState == 3) { // PAUSED
+					if (ELEMENTS["qr-code-reader"].getState() == 3) { // PAUSED
 						ELEMENTS["qr-code-reader"].resume()
 						return
 					}
@@ -641,15 +701,13 @@
 					}
 
 				// stop scanning
-					const qrCodeReaderState = ELEMENTS["qr-code-reader"].getState()
-					if (qrCodeReaderState == 2) { // SCANNING
+					if (ELEMENTS["qr-code-reader"].getState() == 2) { // SCANNING
 						ELEMENTS["qr-code-reader"].pause()
 						STATE.captureWaitTimeout = setTimeout(startQRcodeDetector, STATE.captureWaitMS)
 					}
 
 				// capture
-					const playerId = text.trim().replace(/\-/g, "")
-					capturePlayer(playerId)
+					capturePlayer(text)
 			} catch (error) {console.log(error)}
 		}
 
@@ -662,10 +720,15 @@
 					}
 
 				// qr code scanner
-					ELEMENTS["qr-code-reader"]?.pause()
-					delete ELEMENTS["qr-code-reader"]
+					clearTimeout(STATE.captureWaitTimeout)
+					STATE.captureWaitTimeout = null
 
 					ELEMENTS["qr-code-reader-area"]?.remove()
 					delete ELEMENTS["qr-code-reader-area"]
+
+					if (ELEMENTS["qr-code-reader"].getState() == 2) { // SCANNING
+						ELEMENTS["qr-code-reader"].pause()
+					}
+					delete ELEMENTS["qr-code-reader"]
 			} catch (error) {console.log(error)}
 		}

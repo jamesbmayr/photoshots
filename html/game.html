@@ -7,6 +7,7 @@
 		<script node>getAsset("css-variables")</script node>
 		<link rel="stylesheet" href="game.css"/>
 		<script src="qrcode-generator.js" defer></script>
+		<script src="qrcode-reader.js" defer></script>
 		<script src="game.js" defer></script>
 	</head>
 	<body>
@@ -64,14 +65,15 @@
 							const player = REQUEST.game.players[playerId]
 							const status = REQUEST.game.timeEnd ? (player.win ? "win" : player.loss ? "loss" : "unknown") :
 										   !player.connected ? "disconnected" :
-										   REQUEST.game.timeStart ? (player.cooldown ? "stunned" : player.target ? "in" : "out") :
+										   REQUEST.game.timeStart ? (player.cooldown ? `stunned (${player.cooldown})` : (player.target ? "in" : "out")) :
 										   "ready"
 							return `<div class="player" id="player-${playerId}">` +
 									`<h3 class="player-name">${player.name}</h3>` +
 									`<h4 class="player-status">${status}</h4>` +
-									(!REQUEST.game.timeEnd && REQUEST.session.userId && REQUEST.game.ownerId == REQUEST.session.userId && REQUEST.session.userId !== playerId ? 
-										`<button class="player-ban" value="${playerId}">ban</button>` : 
-										"") +
+									`<li class="player-stat">` +
+										`<span>target</span>` +
+										`<span class="player-stat-target">${player.target ? REQUEST.game.players[player.target].name : "-"}<span>` +
+									`</li>` +
 									`<li class="player-stat">` +
 										`<span>shots</span>` +
 										`<span class="player-stat-shots">${player.shots}<span>` +
@@ -82,11 +84,11 @@
 									`</li>` +
 									`<li class="player-stat">` +
 										`<span>time in</span>` +
-										`<span class="player-stat-time-in">${player.timeIn}<span>` +
+										`<span class="player-stat-time-in">${convertTime(player.timeIn)}<span>` +
 									`</li>` +
 									`<li class="player-stat">` +
 										`<span>time out</span>` +
-										`<span class="player-stat-time-out">${player.timeOut}<span>` +
+										`<span class="player-stat-time-out">${convertTime(player.timeOut)}<span>` +
 									`</li>` +
 								`</div>`
 						}).join(`\n`)

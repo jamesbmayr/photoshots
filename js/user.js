@@ -129,7 +129,7 @@
 		function displayUserQRCode() {
 			try {
 				// get username
-					const username = ELEMENTS["qr-code-container"].innerText.trim()
+					const username = ELEMENTS["qr-code-container"].innerHTML
 
 				// generate code
 					displayQRCode(username, ELEMENTS["qr-code-container"])
