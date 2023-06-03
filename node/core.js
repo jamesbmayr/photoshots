@@ -385,7 +385,7 @@
 							return {
 								"shadow-size": 10,
 								"border-radius": 20,
-								"border-size": 2,
+								"border-size": 3,
 								"gap-size": 5,
 								"font-size": 15
 							}

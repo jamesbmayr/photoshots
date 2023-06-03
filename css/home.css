@@ -133,7 +133,7 @@ html, body {
 	}
 
 	#actions button {
-		background: var(--dark-blue);
+		background: var(--dark-gray);
 		color: var(--light-gray);
 		text-transform: uppercase;
 		user-select: none;
@@ -166,7 +166,7 @@ html, body {
 		display: inline-block;
 		text-align: center;
 		padding: calc(var(--gap-size) + var(--border-size)) var(--gap-size);
-		background-color: var(--dark-blue);
+		background-color: var(--dark-gray);
 		color: var(--light-gray);
 		border-radius: var(--border-radius);
 		font-size: var(--font-size);
@@ -202,20 +202,13 @@ html, body {
 	}
 
 	#join-link {
-		background: transparent !important;
-		display: inline-block;
-		color: var(--dark-blue) !important;
-		font-size: var(--font-size);
-		font-family: var(--font-1);
-		user-select: none;
-		cursor: default;
-		line-height: var(--line-height);
-		padding: var(--gap-size);
+		width: 100%;
+		color: var(--medium-blue) !important;
 		text-transform: uppercase;
 	}
 
 	#join-link:hover, #join-link:focus {
-		color: var(--medium-orange) !important;
+		color: var(--dark-gray) !important;
 	}
 
 /* about */
@@ -239,7 +232,6 @@ html, body {
 		text-transform: uppercase;
 		outline: none;
 		user-select: none;
-		cursor: pointer;
 		transition: var(--transition-time);
 		margin: calc(5 * var(--gap-size)) 0 calc(2 * var(--gap-size)) 0;
 	}
