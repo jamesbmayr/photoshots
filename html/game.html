@@ -67,7 +67,7 @@
 										   !player.connected ? "disconnected" :
 										   REQUEST.game.timeStart ? (player.cooldown ? `stunned (${player.cooldown})` : (player.target ? "in" : "out")) :
 										   "ready"
-							return `<div class="player" id="player-${playerId}">` +
+							return `<div class="player" id="player-${playerId}"${playerId == REQUEST.session.userId ? " self=true" : ""}>` +
 									`<h3 class="player-name">${player.name}</h3>` +
 									`<h4 class="player-status">${status}</h4>` +
 									`<li class="player-stat">` +

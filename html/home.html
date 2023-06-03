@@ -10,39 +10,32 @@
 		<script src="home.js" defer></script>
 	</head>
 	<body>
-		<script node>
-			if (REQUEST.session.userId) {
-				`<button id="logout-user-button">logout</button>`
-			}
-		</script node>
 		<div id="container">
+			<div id="logo-outer">
+				<div id="logo"></div>
+			</div>
 			<h1>PhotoShots</h1>
 			<div id="actions">
 				<script node>
 					if (REQUEST.session.userId) {
-						`<label id="profile-action">` +
-							`<span>logged in as </span><a id="profile-link" href="/user/${REQUEST.user.name}">${REQUEST.user.name}</a>` +
-						`</label>` + 
-						(REQUEST.session.gameId ? (
-							`<label id="join-action">` +
-								`<span>current game: </span><a id="join-link" href="/game/${REQUEST.session.gameId}">${REQUEST.session.gameId}</a>` +
-							`</label>`
-						) : (''))
+						`<div id="user-outer">` +
+							`<a id="user-link" href="/user/${REQUEST.user.name}">&#128100; ${REQUEST.user.name}</a>` + 
+							`<button id="logout-user-button">logout</button>` +
+						`</div>` + 
+						`<div id="game-outer">` +
+							(REQUEST.session.gameId ? `<a id="game-link" href="/game/${REQUEST.session.gameId}">&#128247; ${REQUEST.session.gameId}</a>` : `<a id="join-link" href="/user/${REQUEST.user.name}">join a game</a>`) +
+						`</div>`
 					}
 					else {
-						`<label id="login-action">` +
-							`<input id="login-username-input" type="text" placeholder="username">` +
-							`<input id="login-password-input" type="password" placeholder="password">` + 
-							`<button id="login-user-button">log in</button>` +
-						`</label>` +
-						`<label id="create-action">` +
-							`<button id="create-user-button">sign up</button>` +
-						`</label>`
+						`<input id="login-username-input" type="text" placeholder="username" spellcheck="false" autocomplete="off" autocapitalize="off">` +
+						`<input id="login-password-input" type="password" placeholder="password" spellcheck="false" autocomplete="off" autocapitalize="off">` + 
+						`<button id="login-user-button">log in</button>` +
+						`<button id="create-user-button">sign up</button>`
 					}
 				</script node>
 			</div>
-			<details id="about">
-				<summary id="about-summary">about</summary>
+			<div id="about">
+				<h2>about</h2>
 				<div id="about-inner">
 					<div id="about-overview">
 						PhotoShots is a game.
@@ -58,7 +51,7 @@
 						</li>
 					</div>
 				</div>
-			</details>
+			</div>
 		</div>
 	</body>
 </html>

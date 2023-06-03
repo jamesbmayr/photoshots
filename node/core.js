@@ -333,7 +333,7 @@
 									<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0"/>`
 						break
 						case "fonts":
-							return `<link href="https://fonts.googleapis.com/css2?family=Alata&display=swap" rel="stylesheet">`
+							return `<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Righteous&display=swap" rel="stylesheet">`
 						break
 						case "css-variables":
 							// output
@@ -359,7 +359,7 @@
 
 							// fonts
 								const fontString = getAsset("fonts")
-								const fontNames = fontString.slice(fontString.indexOf("family=") + "family=".length, fontString.indexOf("&display=")).split("|")
+								const fontNames = fontString.slice(fontString.indexOf("family=") + "family=".length, fontString.indexOf("&display=")).split("&family=")
 								for (const index in fontNames) {
 									const font = fontNames[index].replace(/\+/g, " ").split(":")[0]
 									cssVariables.push(`--font-${index}: "${font}", sans-serif;`)
@@ -378,7 +378,7 @@
 								"light-blue": "#04b1ff",
 								"medium-blue": "#0066aa",
 								"dark-blue": "#003377",
-								"medium-red": "#d94c4c"
+								"medium-orange": "#fc6404"
 							}
 						break
 						case "sizes":
@@ -386,17 +386,13 @@
 								"shadow-size": 10,
 								"border-radius": 20,
 								"border-size": 2,
-								"small-gap-size": 5,
-								"medium-gap-size": 10,
-								"large-gap-size": 20,
-								"small-font-size": 15,
-								"medium-font-size": 20,
-								"large-font-size": 35,
-								"huge-font-size": 50
+								"gap-size": 5,
+								"font-size": 15
 							}
 						break
 						case "styling":
 							return {
+								"line-height": 1,
 								"transition-time": "0.5s",
 								"hover-brightness": 0.75,
 							}
