@@ -8,6 +8,7 @@
 	/* elements */
 		const ELEMENTS = {
 			"logout-user-button": document.querySelector("#logout-user-button"),
+			"game-actions": document.querySelector("#game-actions"),
 			"join-camera-button": document.querySelector("#join-camera-button"),
 			"join-gameid-input": document.querySelector("#join-gameid-input"),
 			"join-game-button": document.querySelector("#join-game-button"),
@@ -253,18 +254,32 @@
 		ELEMENTS["join-camera-button"]?.addEventListener(TRIGGERS.click, startScanning)
 		function startScanning(event) {
 			try {
-				// first time
+				// start - first time
 					if (!ELEMENTS["qr-code-reader"]) {
 						// create element
 							const readerElement = document.createElement("div")
 								readerElement.id = "qr-code-reader-area"
-							document.body.appendChild(readerElement)
+							ELEMENTS["game-actions"].appendChild(readerElement)
 
 						// create reader
 							ELEMENTS["qr-code-reader"] = new Html5Qrcode(readerElement.id)
+
+						// start
+							ELEMENTS["join-camera-button"].innerHTML = "scanning"
+							startQRcodeDetector()
+							return
 					}
 
-				// initialize
+				// stop scanning
+					if (ELEMENTS["qr-code-reader"].getState() == 2) { // SCANNING
+						ELEMENTS["qr-code-reader"].pause()
+						ELEMENTS["qr-code-reader"].element.setAttribute("hidden", true)
+						ELEMENTS["join-camera-button"].innerHTML = "scan"
+						return
+					}
+
+				// start
+					ELEMENTS["join-camera-button"].innerHTML = "scanning"
 					startQRcodeDetector()
 			} catch (error) {console.log(error)}
 		}
@@ -337,8 +352,7 @@
 					ELEMENTS["join-gameid-input"].value = text.trim()
 
 				// stop scanning
-					const qrCodeReaderState = ELEMENTS["qr-code-reader"].getState()
-					if (qrCodeReaderState == 2) { // SCANNING
+					if (ELEMENTS["qr-code-reader"].getState() == 2) { // SCANNING
 						ELEMENTS["qr-code-reader"].pause()
 						ELEMENTS["qr-code-reader"].element.setAttribute("hidden", true)
 					}

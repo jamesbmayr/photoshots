@@ -1,16 +1,139 @@
-html, body {
-	position: absolute;
-	top: 0;
-	left: 0;
-	margin: 0;
-	padding: 0;
-	width: 100%;
-	height: 100%;
-	font-size: 0;
-	font-family: var(--font-1);
-	background: var(--dark-gray);
-	overflow: hidden;
-}
+/* elements */
+	html, body {
+		position: absolute;
+		top: 0;
+		left: 0;
+		margin: 0;
+		padding: 0;
+		width: 100%;
+		height: 100%;
+		font-size: 0;
+		font-family: var(--font-1);
+		background: var(--dark-gray);
+		overflow: hidden;
+	}
+
+	section {
+		float: left;
+		width: 100%;
+		box-sizing: border-box;
+		text-align: center;
+	}
+
+	section > div {
+		width: 100%;
+		height: auto;
+		max-width: var(--max-content-size);
+		box-sizing: border-box;
+		padding: calc(2 * var(--gap-size));
+		margin: auto auto;
+	}
+
+	h1 {
+		font-size: calc(3 * var(--font-size));
+		font-family: var(--font-0);
+		color: var(--light-gray);
+		text-align: center;
+		margin: calc(5 * var(--gap-size)) 0;
+		width: 100%;
+		height: calc(3 * var(--font-size));
+		box-sizing: border-box;
+		line-height: var(--line-height);	
+		user-select: none;
+	}
+
+	h2 {
+		text-align: center;
+		font-size: calc(2 * var(--font-size));
+		height: calc(2 * var(--font-size));
+		color: var(--light-gray);
+		line-height: var(--line-height);
+		text-transform: uppercase;
+		outline: none;
+		user-select: none;
+		margin: calc(3 * var(--gap-size)) 0 calc(3 * var(--gap-size)) 0;
+	}
+
+	a, a:visited {
+		color: var(--medium-blue);
+		display: inline-block;
+		text-align: center;
+		border-radius: var(--border-radius);
+		font-size: var(--font-size);
+		font-family: var(--font-1);
+		cursor: pointer;
+		transition: var(--transition-time);
+		user-select: none;
+		text-decoration: none;
+		margin: 0;
+		outline: none;
+	}
+
+	a:hover, a:focus {
+		color: var(--medium-orange);
+	}
+
+	a.pseudobutton, a.pseudobutton:visited {
+		width: 100%;
+		box-sizing: border-box;
+		height: calc(var(--font-size) + 3 * var(--gap-size));
+		padding: calc(var(--gap-size) + var(--border-size)) var(--gap-size);
+		background: var(--dark-gray);
+		color: var(--medium-blue);
+		vertical-align: bottom;
+		line-height: var(--line-height);
+	}
+
+	a.pseudobutton:hover, a.pseudobutton:focus {
+		background: var(--medium-orange);
+		color: var(--dark-gray);
+	}
+
+	input {
+		width: 100%;
+		height: calc(var(--font-size) + 3 * var(--gap-size));
+		box-sizing: border-box;
+		border: 0;
+		padding: var(--gap-size);
+		font-family: var(--font-1);
+		font-size: var(--font-size);
+		line-height: var(--line-height);
+		text-align: center;
+		outline: none;
+		transition: var(--transition-time);
+		background: var(--light-gray);
+		color: var(--dark-gray);
+	}
+
+	input:hover, input:focus {
+		box-shadow: 0 0 var(--border-size) var(--border-size) var(--medium-orange) inset;
+	}
+
+	button {
+		width: 100%;
+		height: calc(var(--font-size) + 3 * var(--gap-size));
+		box-sizing: border-box;
+		border: 0;
+		padding: var(--gap-size);
+		font-family: var(--font-1);
+		font-size: var(--font-size);
+		line-height: var(--line-height);
+		text-align: center;
+		outline: none;
+		transition: var(--transition-time);
+		background: var(--dark-gray);
+		color: var(--light-gray);
+		text-transform: uppercase;
+		user-select: none;
+		cursor: pointer;
+		color: var(--medium-blue);
+		border-radius: var(--border-radius);
+	}
+
+	button:hover, button:focus {
+		background: var(--medium-orange);
+		color: var(--dark-gray);
+	}
 
 /* toast */
 	#toast {
@@ -50,20 +173,12 @@ html, body {
 		opacity: 0;
 	}
 
-/* container */
-	#container {
-		position: absolute;
-		top: 0;
-		left: 0;
-		margin: 0;
-		width: 100%;
-		height: 100%;
-		box-sizing: border-box;
+/* header */
+	#header-inner {
+		padding: 0;
 	}
 
-/* header */
 	#logo-outer {
-		float: left;
 		width: 100%;
 		height: calc(5 * var(--font-size));
 		text-align: center;
@@ -83,109 +198,29 @@ html, body {
 		user-select: none;
 	}
 
-	h1 {
-		float: left;
-		font-size: calc(3 * var(--font-size));
-		font-family: var(--font-0);
-		color: var(--light-gray);
-		text-align: center;
-		margin: calc(5 * var(--gap-size)) 0;
-		width: 100%;
-		height: calc(3 * var(--font-size));
-		box-sizing: border-box;
-		line-height: var(--line-height);	
-		user-select: none;
-	}
-
 /* actions */
 	#actions {
-		float: left;
-		width: 100%;
-		padding: calc(2 * var(--gap-size));
-		box-sizing: border-box;
 		background: var(--medium-blue);
 		height: calc(6 * var(--gap-size) + 2 * (var(--font-size) + 3 * var(--gap-size)));
-		text-align: center;
 	}
 
-	#actions input, #actions button {
-		width: 50%;
-		height: calc(var(--font-size) + 3 * var(--gap-size));
-		box-sizing: border-box;
-		border: 0;
-		padding: var(--gap-size);
-		font-family: var(--font-1);
-		font-size: var(--font-size);
-		line-height: var(--line-height);
-		text-align: center;
-		outline: none;
-		transition: var(--transition-time);
-	}
-
-	#actions input {
-		background: var(--light-gray);
-		color: var(--dark-gray);
+	#login-username-input, #login-password-input {
 		margin-bottom: calc(2 * var(--gap-size));
 	}
 
-	#actions input:hover, #actions input:focus {
-		box-shadow: 0 0 var(--border-size) var(--border-size) var(--medium-orange) inset;
-	}
-
-	#actions button {
-		background: var(--dark-gray);
-		color: var(--light-gray);
-		text-transform: uppercase;
-		user-select: none;
-		cursor: pointer;
-		color: var(--medium-blue);
-		border-radius: var(--border-radius);
-	}
-
-	#actions button:hover, #actions button:focus {
-		background: var(--medium-orange);
-		color: var(--dark-gray);
-	}
-
 	#login-username-input, #login-user-button {
+		width: 50%;
 		border-radius: var(--border-radius) 0 0 var(--border-radius) !important;
 	}
 
 	#login-password-input, #create-user-button {
+		width: 50%;
 		border-radius: 0 var(--border-radius) var(--border-radius) 0 !important;
 	}
 
 /* authed info */
-	#actions div {
-		float: left;
-		width: 100%;
-		height: calc(var(--font-size) + 5 * var(--gap-size));
-	}
-
-	#actions a {
-		display: inline-block;
-		text-align: center;
-		padding: calc(var(--gap-size) + var(--border-size)) var(--gap-size);
-		background-color: var(--dark-gray);
-		color: var(--light-gray);
-		border-radius: var(--border-radius);
-		font-size: var(--font-size);
-		font-family: var(--font-1);
-		height: calc(var(--font-size) + 3 * var(--gap-size));
-		cursor: pointer;
-		transition: var(--transition-time);
-		user-select: none;
-		text-decoration: none;
-		margin: 0;
-		box-sizing: border-box;
-		outline: none;
-		line-height: var(--line-height);
-		vertical-align: bottom;
-	}
-
-	#actions a:hover, #actions a:focus {
-		background: var(--medium-orange);
-		color: var(--dark-gray);
+	#user-outer {
+		margin-bottom: calc(2 * var(--gap-size));
 	}
 
 	#user-link {
@@ -194,70 +229,24 @@ html, body {
 	}
 
 	#logout-user-button {
+		width: 50%;
 		border-radius: 0 var(--border-radius) var(--border-radius) 0 !important;
 	}
 
-	#game-link {
-		width: 100%;
-	}
-
 	#join-link {
-		width: 100%;
-		color: var(--medium-blue) !important;
 		text-transform: uppercase;
-	}
-
-	#join-link:hover, #join-link:focus {
-		color: var(--dark-gray) !important;
 	}
 
 /* about */
 	#about {
-		float: left;
-		width: 100%;
-		margin: 0;
-		box-sizing: border-box;
 		height: calc(100vh - (8 * var(--font-size) + 15 * var(--gap-size)) - (6 * var(--gap-size) + 2 * (var(--font-size) + 3 * var(--gap-size))));
-		padding: calc(5 * var(--gap-size)) calc(3 * var(--gap-size)) calc(3 * var(--gap-size)) calc(3 * var(--gap-size));
 		overflow-x: hidden;
 		overflow-y: scroll;
 	}
 
-	#about h2 {
-		text-align: center;
-		font-size: var(--font-size);
-		height: var(--font-size);
-		color: var(--light-gray);
-		line-height: var(--line-height);
-		text-transform: uppercase;
-		outline: none;
-		user-select: none;
-		transition: var(--transition-time);
-		margin: calc(5 * var(--gap-size)) 0 calc(2 * var(--gap-size)) 0;
-	}
-
-	#about-summary:focus, #about-summary:hover {
-		color: var(--medium-orange);
-	}
-
 	#about-inner {
-		float: left;
-		width: 100%;
-		box-sizing: border-box;
-		height: auto;
 		font-size: var(--font-size);
 		color: var(--light-gray);
-		padding-bottom: calc(10 * var(--gap-size));
-	}
-
-	#about-inner a, #about-inner a:visited {
-		color: var(--medium-blue);
-		cursor: pointer;
-		text-decoration: none;
-		transition: var(--transition-time);
-		outline: none;
-	}
-
-	#about-inner a:hover, #about-inner a:focus {
-		color: var(--medium-orange);
+		padding-bottom: calc(20 * var(--gap-size));
+		text-align: left;
 	}

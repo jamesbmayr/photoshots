@@ -372,9 +372,9 @@
 					// styling
 						case "colors":
 							return {
-								"light-gray": "#dddddd",
+								"light-gray": "#ffffff",
 								"medium-gray": "#555555",
-								"dark-gray": "#111111",
+								"dark-gray": "#000000",
 								"light-blue": "#04b1ff",
 								"medium-blue": "#0066aa",
 								"dark-blue": "#003377",
@@ -387,7 +387,8 @@
 								"border-radius": 20,
 								"border-size": 3,
 								"gap-size": 5,
-								"font-size": 15
+								"font-size": 15,
+								"max-content-size": 800,
 							}
 						break
 						case "styling":

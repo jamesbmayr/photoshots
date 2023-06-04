@@ -10,20 +10,24 @@
 		<script src="home.js" defer></script>
 	</head>
 	<body>
-		<div id="container">
-			<div id="logo-outer">
-				<div id="logo"></div>
+		<section id="header">
+			<div id="header-inner">
+				<div id="logo-outer">
+					<div id="logo"></div>
+				</div>
+				<h1>PhotoShots</h1>
 			</div>
-			<h1>PhotoShots</h1>
-			<div id="actions">
+		</section>
+		<section id="actions">
+			<div id="actions-inner">
 				<script node>
 					if (REQUEST.session.userId) {
 						`<div id="user-outer">` +
-							`<a id="user-link" href="/user/${REQUEST.user.name}">&#128100; ${REQUEST.user.name}</a>` + 
+							`<a class="pseudobutton" id="user-link" href="/user/${REQUEST.user.name}">&#128100; ${REQUEST.user.name}</a>` + 
 							`<button id="logout-user-button">logout</button>` +
 						`</div>` + 
 						`<div id="game-outer">` +
-							(REQUEST.session.gameId ? `<a id="game-link" href="/game/${REQUEST.session.gameId}">&#128247; ${REQUEST.session.gameId}</a>` : `<a id="join-link" href="/user/${REQUEST.user.name}">join a game</a>`) +
+							(REQUEST.session.gameId ? `<a class="pseudobutton" id="game-link" href="/game/${REQUEST.session.gameId}">&#128247; ${REQUEST.session.gameId}</a>` : `<a class="pseudobutton" id="join-link" href="/user/${REQUEST.user.name}#game-actions">join a game</a>`) +
 						`</div>`
 					}
 					else {
@@ -34,24 +38,24 @@
 					}
 				</script node>
 			</div>
-			<div id="about">
+		</section>
+		<section id="about">
+			<div id="about-inner">
 				<h2>about</h2>
-				<div id="about-inner">
-					<div id="about-overview">
-						PhotoShots is a game.
-					</div>
-					<div id="about-credits">
-						<li>
-							<span>QR Code Reader: </span>
-							<a href="https://github.com/mebjas/html5-qrcode/blob/master/minified/html5-qrcode.min.js" target="_blank">mebjas</a>
-						</li>
-						<li>
-							<span>QR Code Generator: </span>
-							<a href="https://github.com/davidshimjs/qrcodejs/blob/master/qrcode.min.js" target="_blank">davidshimjs</a>
-						</li>
-					</div>
+				<div id="about-overview">
+					PhotoShots is a game.
+				</div>
+				<div id="about-credits">
+					<li>
+						<span>QR Code Reader: </span>
+						<a href="https://github.com/mebjas/html5-qrcode/blob/master/minified/html5-qrcode.min.js" target="_blank">mebjas</a>
+					</li>
+					<li>
+						<span>QR Code Generator: </span>
+						<a href="https://github.com/davidshimjs/qrcodejs/blob/master/qrcode.min.js" target="_blank">davidshimjs</a>
+					</li>
 				</div>
 			</div>
-		</div>
+		</section>
 	</body>
 </html>
