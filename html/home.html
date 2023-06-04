@@ -7,6 +7,7 @@
 		<script node>getAsset("fonts")</script node>
 		<script node>getAsset("css-variables")</script node>
 		<link rel="stylesheet" href="home.css"/>
+		<script src="qrcode-reader.js" defer></script>
 		<script src="home.js" defer></script>
 	</head>
 	<body>
@@ -18,26 +19,38 @@
 				<h1>PhotoShots</h1>
 			</div>
 		</section>
-		<section id="actions">
-			<div id="actions-inner">
-				<script node>
-					if (REQUEST.session.userId) {
-						`<div id="user-outer">` +
-							`<a class="pseudobutton" id="user-link" href="/user/${REQUEST.user.name}">&#128100; ${REQUEST.user.name}</a>` + 
-							`<button id="logout-user-button">logout</button>` +
-						`</div>` + 
-						`<div id="game-outer">` +
-							(REQUEST.session.gameId ? `<a class="pseudobutton" id="game-link" href="/game/${REQUEST.session.gameId}">&#128247; ${REQUEST.session.gameId}</a>` : `<a class="pseudobutton" id="join-link" href="/user/${REQUEST.user.name}#game-actions">join a game</a>`) +
-						`</div>`
+		<section id="user-actions">
+			<div id="user-actions-inner"><script node>
+				if (REQUEST.session.userId) {
+					`<a class="pseudobutton" id="user-link" href="/user/${REQUEST.user.name}">&#128100; ${REQUEST.user.name}</a>` + 
+					`<button id="logout-user-button">logout</button>`
+				}
+				else {
+					`<input id="login-username-input" type="text" placeholder="username" spellcheck="false" autocomplete="off" autocapitalize="off">` +
+					`<input id="login-password-input" type="password" placeholder="password" spellcheck="false" autocomplete="off" autocapitalize="off">` + 
+					`<button id="login-user-button">log in</button>` +
+					`<button id="create-user-button">sign up</button>`
+				}
+			</script node></div>
+		</section>
+		<section id="game-actions">
+			<div id="game-actions-inner"><script node>
+				if (REQUEST.session.userId) {
+					if (REQUEST.session.gameId) {
+						`<a class="pseudobutton" id="game-link" href="/game/${REQUEST.session.gameId}">&#128247; ${REQUEST.session.gameId}</a>`
 					}
 					else {
-						`<input id="login-username-input" type="text" placeholder="username" spellcheck="false" autocomplete="off" autocapitalize="off">` +
-						`<input id="login-password-input" type="password" placeholder="password" spellcheck="false" autocomplete="off" autocapitalize="off">` + 
-						`<button id="login-user-button">log in</button>` +
-						`<button id="create-user-button">sign up</button>`
+						`<div id="join-action">` +
+							`<button id="join-camera-button">scan</button>` +
+							`<input id="join-gameid-input" type="text" placeholder="game code">` +
+							`<button id="join-game-button">join</button>` +
+						`</div>` +
+						`<div id="create-action">` +
+							`<button id="create-game-button">new game</button>` +
+						`<div>`
 					}
-				</script node>
-			</div>
+				}
+			</script node></div>
 		</section>
 		<section id="about">
 			<div id="about-inner">

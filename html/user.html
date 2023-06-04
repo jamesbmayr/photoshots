@@ -24,8 +24,8 @@
 		<script node>
 			if (REQUEST.session.userId && REQUEST.user.id == REQUEST.session.userId) {
 				`<section id="user-actions">` +
-					`<h2>user info</h2>` +
 					`<div id="user-actions-inner">` +
+						`<h2>user info</h2>` +
 						`<div id="password-action">` +
 							`<input id="old-password-input" type="password" placeholder="old password">` + 
 							`<input id="new-password-input" type="password" placeholder="new password">` + 
@@ -59,8 +59,8 @@
 		<script node>
 			if (REQUEST.session.userId && REQUEST.user.id == REQUEST.session.userId) {
 				`<section id="game-actions">` +
-					`<h2>Games</h2>` +
 					`<div id="game-actions-inner">` +
+						`<h2>Games</h2>` +
 						(REQUEST.session.gameId ? (
 							`<div id="join-action">` +
 								`<a class="pseudobutton" id="join-link" href="/game/${REQUEST.session.gameId}">&#128247; ${REQUEST.session.gameId}</a>` +

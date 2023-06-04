@@ -333,7 +333,7 @@
 									<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0"/>`
 						break
 						case "fonts":
-							return `<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Righteous&display=swap" rel="stylesheet">`
+							return `<link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Righteous&display=swap" rel="stylesheet">`
 						break
 						case "css-variables":
 							// output

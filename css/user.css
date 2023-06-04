@@ -45,6 +45,7 @@
 	h2 {
 		text-align: center;
 		font-size: calc(2 * var(--font-size));
+		font-family: var(--font-0);
 		height: calc(2 * var(--font-size));
 		color: var(--light-gray);
 		line-height: var(--line-height);
@@ -58,6 +59,7 @@
 		text-align: center;
 		font-size: calc(1.5 * var(--font-size));
 		height: calc(1.5 * var(--font-size));
+		font-family: var(--font-1);
 		color: var(--light-gray);
 		line-height: var(--line-height);
 		text-transform: uppercase;
@@ -69,6 +71,7 @@
 	h4 {
 		text-align: center;
 		font-size: calc(1 * var(--font-size));
+		font-family: var(--font-1);
 		height: calc(1 * var(--font-size));
 		color: var(--light-gray);
 		line-height: var(--line-height);
@@ -251,7 +254,7 @@
 	}
 
 	#user-actions h2 {
-		margin-bottom: var(--gap-size);
+		margin-top: var(--gap-size);
 	}
 
 	#old-password-input, #new-password-input, #update-password-button {
@@ -314,7 +317,7 @@
 	}
 
 	#game-actions h2 {
-		margin-bottom: var(--gap-size);
+		margin-top: var(--gap-size);
 	}
 
 	#join-camera-button, #join-gameid-input, #join-game-button {

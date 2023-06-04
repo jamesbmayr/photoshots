@@ -353,6 +353,7 @@
 
 				// stop scanning
 					if (ELEMENTS["qr-code-reader"].getState() == 2) { // SCANNING
+						ELEMENTS["join-camera-button"].innerHTML = "scan"
 						ELEMENTS["qr-code-reader"].pause()
 						ELEMENTS["qr-code-reader"].element.setAttribute("hidden", true)
 					}

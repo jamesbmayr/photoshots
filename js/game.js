@@ -8,16 +8,12 @@
 
 	/* elements */
 		const ELEMENTS = {
-			"actions": document.querySelector("#actions"),
 			"quit-game-button": document.querySelector("#quit-game-button"),
+			"game-actions-inner": document.querySelector("#game-actions-inner"),
 			"delete-game-button": document.querySelector("#delete-game-button"),
 			"start-game-button": document.querySelector("#start-game-button"),
 			"qr-code-container": document.querySelector("#qr-code-container"),
-			"qr-code-print-button": document.querySelector("#qr-code-print-button"),
-			"game-state": document.querySelector("#game-state"),
 			"game-state-indicator": document.querySelector("#game-state-indicator"),
-			"game-mode": document.querySelector("#game-mode"),
-			"game-mode-name": document.querySelector("#game-mode-name"),
 			"game-mode-select": document.querySelector("#game-mode-select"),
 			"game-mode-win-condition": document.querySelector("#game-mode-win-condition"),
 			"game-mode-end-condition": document.querySelector("#game-mode-end-condition"),
@@ -99,15 +95,6 @@
 						y,
 						correctLevel: QRCode.CorrectLevel.M
 					})
-			} catch (error) {console.log(error)}
-		}
-
-	/* printQRCode */
-		ELEMENTS["qr-code-print-button"]?.addEventListener(TRIGGERS.click, printQRCode)
-		function printQRCode() {
-			try {
-				// trigger browser print modal
-					window.print()
 			} catch (error) {console.log(error)}
 		}
 
@@ -339,7 +326,7 @@
 						ELEMENTS["delete-game-button"].id = "delete-game-button"
 						ELEMENTS["delete-game-button"].innerHTML = "delete game"
 						ELEMENTS["delete-game-button"].addEventListener(TRIGGERS.click, deleteGame)
-						ELEMENTS["actions"].appendChild(ELEMENTS["delete-game-button"])
+						ELEMENTS["game-actions-inner"].appendChild(ELEMENTS["delete-game-button"])
 					}
 
 				// start game button
@@ -348,7 +335,7 @@
 						ELEMENTS["start-game-button"].id = "start-game-button"
 						ELEMENTS["start-game-button"].innerHTML = "start game"
 						ELEMENTS["start-game-button"].addEventListener(TRIGGERS.click, startGame)
-						ELEMENTS["actions"].appendChild(ELEMENTS["start-game-button"])
+						ELEMENTS["game-actions-inner"].appendChild(ELEMENTS["start-game-button"])
 					}
 
 				// game mode select
@@ -436,7 +423,7 @@
 				// info
 					const playerName = document.createElement("h3")
 						playerName.className = "player-name"
-						playerName.innerHTML = player.name
+						playerName.innerHTML = `&#128100; ${player.name}`
 					newPlayerElement.appendChild(playerName)
 
 					const playerStatus = document.createElement("h4")

@@ -11,91 +11,87 @@
 		<script src="game.js" defer></script>
 	</head>
 	<body>
-		<a id="home-link" href="/">home</a>
-		<div id="actions">
+		<section id="nav-bar">
+			<a id="home-link" class="pseudobutton" href="/">&larr;home</a>
 			<script node>
 				if (!REQUEST.game.timeEnd && REQUEST.session.userId && REQUEST.game.players[REQUEST.session.userId]) {
-					`<button id="quit-game-button">quit game</button>`
+					`<button id="quit-game-button">quit</button>`
 				}
 			</script node>
-			<script node>
-				if (!REQUEST.game.timeEnd && REQUEST.session.userId && REQUEST.game.ownerId == REQUEST.session.userId) {
+			<h1 id="nav-bar-name">&#128247; <script node>REQUEST.game.id</script node></h1>
+		</section>
+		<section id="game-actions">
+			<div id="game-actions-inner"><script node>
+				if (!REQUEST.game.timeStart && REQUEST.session.userId && REQUEST.game.ownerId == REQUEST.session.userId) {
+					`<button id="start-game-button">start game</button>` +
 					`<button id="delete-game-button">delete game</button>`
 				}
-			</script node>
-			<script node>
-				if (!REQUEST.game.timeStart && REQUEST.session.userId && REQUEST.game.ownerId == REQUEST.session.userId) {
-					`<button id="start-game-button">start game</button>`
-				}
-			</script node>
-		</div>
-		<div id="container">
-			<h1><script node>REQUEST.game.id</script node></h1>
-			<div id="qr-code">
-				<h2>QR Code</h2>
-				<button id="qr-code-print-button">print QR Code</button>
+			</script node></div>
+		</section>
+		<section id="qr-code">
+			<div id="qr-code-inner">
 				<div id="qr-code-container"><script node>REQUEST.game.id</script node></div>
 			</div>
-			<div id="game-state">
-				<h2>state</h2>
-				<div id="game-state-indicator">
-					<script node>REQUEST.game.timeEnd ? `ended ${new Date(REQUEST.game.timeEnd).toLocaleString()}` : REQUEST.game.timeRemaining ? convertTime(REQUEST.game.timeRemaining) : `setting up`</script node>
-				</div>
+		</section>
+		<section id="game-info">
+			<div id="game-info-inner">
+				<h3 id="game-state-indicator"><script node>
+					REQUEST.game.timeEnd ? 
+						`ended ${new Date(REQUEST.game.timeEnd).toLocaleString()}` : 
+						REQUEST.game.timeRemaining ? 
+							convertTime(REQUEST.game.timeRemaining) : 
+							`setting up`
+				</script node></h3>
+				<script node>
+					const gameModes = getAsset("constants").gameModes;
+					`<select id="game-mode-select"${REQUEST.game.timeStart || !REQUEST.session.userId || REQUEST.game.ownerId !== REQUEST.session.userId ? " disabled" : ""}>` +
+						Object.keys(gameModes).map(gameModeId => 
+							`<option value="${gameModeId}"${gameModeId == REQUEST.game.mode.id ? " selected" : ""}>${gameModes[gameModeId].name}</option>`
+						).join("\n") +
+					`</select>`
+				</script node>
+				<div id="game-mode-win-condition"><script node>REQUEST.game.mode.winCondition || "?"</script node></div>
+				<div id="game-mode-end-condition"><script node>REQUEST.game.mode.endCondition || "?"</script node></div>
 			</div>
-			<div id="game-mode">
-				<h2>mode</h2>
-				<li id="game-mode-name">
-					<script node>
-						const gameModes = getAsset("constants").gameModes;
-						`<select id="game-mode-select"${REQUEST.game.timeStart || !REQUEST.session.userId || REQUEST.game.ownerId !== REQUEST.session.userId ? " disabled" : ""}>` +
-							Object.keys(gameModes).map(gameModeId => 
-								`<option value="${gameModeId}"${gameModeId == REQUEST.game.mode.id ? " selected" : ""}>${gameModes[gameModeId].name}</option>`
-							).join("\n") +
-						`</select>`
-					</script node>
-				</li>
-				<li id="game-mode-win-condition"><script node>REQUEST.game.mode.winCondition || "?"</script node></li>
-				<li id="game-mode-end-condition"><script node>REQUEST.game.mode.endCondition || "?"</script node></li>
-			</div>
-			<div id="players">
+		</section>
+		<section id="players">
+			<div id="players-inner">
 				<h2>players</h2>
-				<div id="players-list">
-					<script node>
-						Object.keys(REQUEST.game.players).map(playerId => {
-							const player = REQUEST.game.players[playerId]
-							const status = REQUEST.game.timeEnd ? (player.win ? "win" : player.loss ? "loss" : "unknown") :
-										   !player.connected ? "disconnected" :
-										   REQUEST.game.timeStart ? (player.cooldown ? `stunned (${player.cooldown})` : (player.target ? "in" : "out")) :
-										   "ready"
-							return `<div class="player" id="player-${playerId}"${playerId == REQUEST.session.userId ? " self=true" : ""}>` +
-									`<h3 class="player-name">${player.name}</h3>` +
-									`<h4 class="player-status">${status}</h4>` +
-									`<li class="player-stat">` +
-										`<span>target</span>` +
-										`<span class="player-stat-target">${player.target ? REQUEST.game.players[player.target].name : "-"}<span>` +
-									`</li>` +
-									`<li class="player-stat">` +
-										`<span>shots</span>` +
-										`<span class="player-stat-shots">${player.shots}<span>` +
-									`</li>` +
-									`<li class="player-stat">` +
-										`<span>stuns</span>` +
-										`<span class="player-stat-stuns">${player.stuns}<span>` +
-									`</li>` +
-									`<li class="player-stat">` +
-										`<span>time in</span>` +
-										`<span class="player-stat-time-in">${convertTime(player.timeIn)}<span>` +
-									`</li>` +
-									`<li class="player-stat">` +
-										`<span>time out</span>` +
-										`<span class="player-stat-time-out">${convertTime(player.timeOut)}<span>` +
-									`</li>` +
-								`</div>`
-						}).join(`\n`)
-					</script node>
-				</div>
+				<div id="players-list"><script node>
+					Object.keys(REQUEST.game.players).map(playerId => {
+						const player = REQUEST.game.players[playerId]
+						const status = REQUEST.game.timeEnd ? (player.win ? "win" : player.loss ? "loss" : "unknown") :
+									   !player.connected ? "disconnected" :
+									   REQUEST.game.timeStart ? (player.cooldown ? `stunned (${player.cooldown})` : (player.target ? "in" : "out")) :
+									   "ready"
+						return `<div class="player" id="player-${playerId}"${playerId == REQUEST.session.userId ? " self=true" : ""}>` +
+								`<h3 class="player-name">&#128100; ${player.name}</h3>` +
+								`<h4 class="player-status">${status}</h4>` +
+								`<li class="player-stat">` +
+									`<span>target</span>` +
+									`<span class="player-stat-target">${player.target ? REQUEST.game.players[player.target].name : "-"}<span>` +
+								`</li>` +
+								`<li class="player-stat">` +
+									`<span>shots</span>` +
+									`<span class="player-stat-shots">${player.shots}<span>` +
+								`</li>` +
+								`<li class="player-stat">` +
+									`<span>stuns</span>` +
+									`<span class="player-stat-stuns">${player.stuns}<span>` +
+								`</li>` +
+								`<li class="player-stat">` +
+									`<span>time in</span>` +
+									`<span class="player-stat-time-in">${convertTime(player.timeIn)}<span>` +
+								`</li>` +
+								`<li class="player-stat">` +
+									`<span>time out</span>` +
+									`<span class="player-stat-time-out">${convertTime(player.timeOut)}<span>` +
+								`</li>` +
+							`</div>`
+					}).join(`\n`)
+				</script node></div>
 			</div>
-		</div>
+		</section>
 		<div id="reader"></div>
 	</body>
 </html>

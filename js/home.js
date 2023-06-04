@@ -12,6 +12,11 @@
 			"login-password-input": document.querySelector("#login-password-input"),
 			"login-user-button": document.querySelector("#login-user-button"),
 			"create-user-button": document.querySelector("#create-user-button"),
+			"game-actions": document.querySelector("#game-actions"),
+			"join-camera-button": document.querySelector("#join-camera-button"),
+			"join-gameid-input": document.querySelector("#join-gameid-input"),
+			"join-game-button": document.querySelector("#join-game-button"),
+			"create-game-button": document.querySelector("#create-game-button"),
 		}
 
 /*** helpers ***/
@@ -145,5 +150,149 @@
 					sendPost({
 						action: "logoutUser"
 					}, receivePost)
+			} catch (error) {console.log(error)}
+		}
+
+	/* createGame */
+		ELEMENTS["create-game-button"]?.addEventListener(TRIGGERS.click, submitCreateGame)
+		function submitCreateGame(event) {
+			try {
+				// send to server
+					sendPost({
+						action: "createGame"
+					}, receivePost)
+			} catch (error) {console.log(error)}
+		}
+
+	/* joinGame */
+		ELEMENTS["join-game-button"]?.addEventListener(TRIGGERS.click, submitJoinGame)
+		function submitJoinGame(event) {
+			try {
+				// get gameid
+					const gameId = ELEMENTS["join-gameid-input"]?.value.trim() || null
+					if (!gameId || !gameId.length) {
+						showToast({success: false, message: "enter a game id"})
+						return
+					}
+
+				// send to server
+					sendPost({
+						action: "joinGame",
+						gameId: gameId
+					}, receivePost)
+			} catch (error) {console.log(error)}
+		}
+
+/*** qr code reader ***/
+	/* startScanning */
+		ELEMENTS["join-camera-button"]?.addEventListener(TRIGGERS.click, startScanning)
+		function startScanning(event) {
+			try {
+				// start - first time
+					if (!ELEMENTS["qr-code-reader"]) {
+						// create element
+							const readerElement = document.createElement("div")
+								readerElement.id = "qr-code-reader-area"
+							ELEMENTS["game-actions"].appendChild(readerElement)
+
+						// create reader
+							ELEMENTS["qr-code-reader"] = new Html5Qrcode(readerElement.id)
+
+						// start
+							ELEMENTS["join-camera-button"].innerHTML = "scanning"
+							startQRcodeDetector()
+							return
+					}
+
+				// stop scanning
+					if (ELEMENTS["qr-code-reader"].getState() == 2) { // SCANNING
+						ELEMENTS["qr-code-reader"].pause()
+						ELEMENTS["qr-code-reader"].element.setAttribute("hidden", true)
+						ELEMENTS["join-camera-button"].innerHTML = "scan"
+						return
+					}
+
+				// start
+					ELEMENTS["join-camera-button"].innerHTML = "scanning"
+					startQRcodeDetector()
+			} catch (error) {console.log(error)}
+		}
+
+	/* startQRcodeDetector */
+		function startQRcodeDetector() {
+			try {
+				// get state
+					const qrCodeReaderState = ELEMENTS["qr-code-reader"].getState()
+
+				// scanning --> return
+					if (qrCodeReaderState == 2) { // SCANNING
+						return
+					}
+
+				// paused --> resume
+					if (qrCodeReaderState == 3) { // PAUSED
+						ELEMENTS["qr-code-reader"].resume()
+						ELEMENTS["qr-code-reader"].element.removeAttribute("hidden")
+						return
+					}
+
+				// not started / unknown --> start
+					ELEMENTS["qr-code-reader"].start({facingMode: "environment"}, {fps: 10}, detectQRcode)
+									  .then(handleQRcodeElements)
+									  .catch(detectQRcode)
+			} catch (error) {console.log(error)}
+		}
+
+	/* handleQRcodeElements */
+		function handleQRcodeElements() {
+			try {
+				// tasks
+					const tasks = {
+						removePausedIndicator: true,
+						attachVideoElement: true
+					}
+
+				// loop
+					const taskInterval = setInterval(() => {
+						// paused indicator
+							if (tasks.removePausedIndicator && ELEMENTS["qr-code-reader"].scannerPausedUiElement) {
+								ELEMENTS["qr-code-reader"].scannerPausedUiElement.remove()
+								delete tasks.removePausedIndicator
+							}
+
+						// video element
+							if (tasks.attachVideoElement && ELEMENTS["qr-code-reader"].element.querySelector("video")) {
+								ELEMENTS["qr-code-reader"].videoElement = ELEMENTS["qr-code-reader"].element.querySelector("video")
+								delete tasks.attachVideoElement
+							}
+
+						// no more tasks
+							if (!Object.keys(tasks).length) {
+								clearInterval(taskInterval)
+							}
+					}, 100) // ms
+			} catch (error) {console.log(error)}
+		}
+
+	/* detectQRcode */
+		function detectQRcode(text, result) {
+			try {
+				// no text?
+					if (!text || !text.length) {
+						return
+					}
+
+				// capture text
+					ELEMENTS["join-gameid-input"].value = text.trim()
+
+				// stop scanning
+					if (ELEMENTS["qr-code-reader"].getState() == 2) { // SCANNING
+						ELEMENTS["join-camera-button"].innerHTML = "scan"
+						ELEMENTS["qr-code-reader"].pause()
+						ELEMENTS["qr-code-reader"].element.setAttribute("hidden", true)
+					}
+
+				// click to join
+					ELEMENTS["join-game-button"].click()
 			} catch (error) {console.log(error)}
 		}

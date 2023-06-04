@@ -45,6 +45,7 @@
 	h2 {
 		text-align: center;
 		font-size: calc(2 * var(--font-size));
+		font-family: var(--font-0);
 		height: calc(2 * var(--font-size));
 		color: var(--light-gray);
 		line-height: var(--line-height);
@@ -195,16 +196,15 @@
 		background-position: center;
 		background-repeat: no-repeat;
 		background-size: contain;
-		border-radius: var(--border-radius);
+		border-radius: calc(var(--border-radius) / 2);
 		height: calc(5 * var(--font-size));
 		width: calc(5 * var(--font-size));
 		user-select: none;
 	}
 
-/* actions */
-	#actions {
+/* user-actions */
+	#user-actions {
 		background: var(--medium-blue);
-		height: calc(6 * var(--gap-size) + 2 * (var(--font-size) + 3 * var(--gap-size)));
 	}
 
 	#login-username-input, #login-password-input {
@@ -221,11 +221,6 @@
 		border-radius: 0 var(--border-radius) var(--border-radius) 0 !important;
 	}
 
-/* authed info */
-	#user-outer {
-		margin-bottom: calc(2 * var(--gap-size));
-	}
-
 	#user-link {
 		width: 50%;
 		border-radius: var(--border-radius) 0 0 var(--border-radius) !important;
@@ -234,6 +229,47 @@
 	#logout-user-button {
 		width: 50%;
 		border-radius: 0 var(--border-radius) var(--border-radius) 0 !important;
+	}
+
+/* game-actions */
+	#game-actions {
+		background: var(--medium-blue);
+	}
+
+	#game-actions-inner {
+		padding-top: 0;
+	}
+
+	#game-actions-inner:empty {
+		padding: 0;
+	}
+
+	#join-camera-button, #join-gameid-input, #join-game-button {
+		width: calc(100% / 3);
+	}
+
+	#join-camera-button {
+		border-radius: var(--border-radius) 0 0 var(--border-radius);
+	}
+
+	#join-game-button {
+		border-radius: 0 var(--border-radius) var(--border-radius) 0;
+	}
+
+	#create-action {
+		margin-top: calc(2 * var(--gap-size));
+	}
+
+	#qr-code-reader-area {
+		padding: 0;
+	}
+	
+	#qr-code-reader-area video {
+		width: calc(100% - 4 * var(--gap-size)) !important;
+		border-radius: var(--border-radius);
+		border: var(--border-size) solid var(--dark-gray);
+		margin: 0 calc(2 * var(--gap-size)) calc(2 * var(--gap-size)) calc(2 * var(--gap-size));
+		box-sizing: border-box;
 	}
 
 	#join-link {
