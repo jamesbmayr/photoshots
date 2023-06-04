@@ -113,32 +113,11 @@
 				<h2><script node>`Games (${Object.keys(REQUEST.user.games).length})`</script node></h2>
 				<div id="games-list">
 					<script node>
-						if (false && !Object.keys(REQUEST.user.games).length) {
+						if (!Object.keys(REQUEST.user.games).length) {
 							`<div id="games-list-empty">no games</div>`
 						}
 						else {
-							Object.values({
-								"game1234": {
-									id: "game1234",
-									mode: "15 minutes of fame",
-									timeEnd: new Date().getTime(),
-									shots: Math.floor(Math.random() * 10),
-									stuns: Math.floor(Math.random() * 10),
-									timeIn: Math.floor(Math.random() * 1000),
-									timeOut: Math.floor(Math.random() * 1000),
-									win: true
-								},
-								"game5678": {
-									id: "game5678",
-									mode: "15 minutes of fame",
-									timeEnd: new Date().getTime(),
-									shots: Math.floor(Math.random() * 10),
-									stuns: Math.floor(Math.random() * 10),
-									timeIn: Math.floor(Math.random() * 1000),
-									timeOut: Math.floor(Math.random() * 1000),
-									loss: true
-								}
-							}).map(game => {
+							Object.values(REQUEST.user.games).map(game => {
 								return `<div class="game">` +
 									`<h3>${game.id}</h3>` +
 									`<h4>${game.mode}</h4>` +

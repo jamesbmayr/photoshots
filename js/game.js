@@ -213,7 +213,9 @@
 						// force close
 							if (data.close) {
 								SOCKET.connection.onclose = () => {}
-								SOCKET.connection.close()
+								if (SOCKET.connection.readyState == 1) { // OPEN
+									SOCKET.connection.close()
+								}
 
 								setTimeout(() => {
 									window.location = "/"
