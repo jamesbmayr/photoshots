@@ -42,7 +42,7 @@
 					else {
 						`<div id="join-action">` +
 							`<button id="join-camera-button">scan</button>` +
-							`<input id="join-gameid-input" type="text" placeholder="game code">` +
+							`<input id="join-gameid-input" type="text" placeholder="game code" spellcheck="false" autocomplete="off" autocapitalize="off">` +
 							`<button id="join-game-button">join</button>` +
 						`</div>` +
 						`<div id="create-action">` +
@@ -54,19 +54,22 @@
 		</section>
 		<section id="about">
 			<div id="about-inner">
-				<h2>about</h2>
 				<div id="about-overview">
-					PhotoShots is a game.
+					<h2>about</h2>
+					<p>PhotoShots is a game.</p>
 				</div>
 				<div id="about-credits">
-					<li>
-						<span>QR Code Reader: </span>
-						<a href="https://github.com/mebjas/html5-qrcode/blob/master/minified/html5-qrcode.min.js" target="_blank">mebjas</a>
-					</li>
-					<li>
-						<span>QR Code Generator: </span>
-						<a href="https://github.com/davidshimjs/qrcodejs/blob/master/qrcode.min.js" target="_blank">davidshimjs</a>
-					</li>
+					<h2>Credits</h2>
+					<ul>
+						<li>
+							<span>QR Code Reader: </span>
+							<a href="https://github.com/mebjas/html5-qrcode/blob/master/minified/html5-qrcode.min.js" target="_blank">mebjas</a>
+						</li>
+						<li>
+							<span>QR Code Generator: </span>
+							<a href="https://github.com/davidshimjs/qrcodejs/blob/master/qrcode.min.js" target="_blank">davidshimjs</a>
+						</li>
+					</ul>
 				</div>
 			</div>
 		</section>

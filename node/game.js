@@ -850,7 +850,7 @@
 									[`players.${opponentPlayer.userId}.stuns`]: opponentPlayer.stuns + 1,
 									[`players.${opponentPlayer.userId}.target`]: null,
 									[`players.${selfPlayer.userId}.shots`]: selfPlayer.shots + 1,
-									[`players.${selfPlayer.userId}.target`]: opponentPlayer.target
+									[`players.${selfPlayer.userId}.target`]: opponentPlayer.target // ???
 								}
 								if (opponentTargeterId && opponentTargeterId !== selfPlayer.userId) {
 									query.document[`players.${opponentTargeterId}.target`] = selfPlayer.userId

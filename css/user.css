@@ -1,4 +1,4 @@
-/* elements */
+/*** elements ***/
 	html, body {
 		position: absolute;
 		top: 0;
@@ -162,7 +162,7 @@
 		color: var(--dark-gray);
 	}
 
-/* toast */
+/*** toast ***/
 	#toast {
 		position: fixed;
 		top: calc(2 * var(--gap-size));
@@ -203,7 +203,7 @@
 		opacity: 0;
 	}
 
-/* nav-bar */
+/*** nav-bar ***/
 	#nav-bar {
 		position: fixed;
 		top: 0;
@@ -228,7 +228,6 @@
 		position: absolute;
 		top: calc(2 * var(--gap-size));
 		left: calc(2 * var(--gap-size));
-		font-weight: bold;
 		width: calc(5 * var(--font-size));
 		text-transform: uppercase;
 	}
@@ -248,7 +247,7 @@
 		margin-top: calc(var(--font-size) + 7 * var(--gap-size) + var(--border-size));
 	}
 
-/* user-actions */
+/*** user-actions ***/
 	#user-actions {
 		background: var(--medium-blue);
 	}
@@ -297,7 +296,7 @@
 		margin-top: calc(2 * var(--gap-size));
 	}
 
-/* qr-code */
+/*** qr-code ***/
 	#qr-code {
 		background: var(--light-gray);
 	}
@@ -310,7 +309,7 @@
 		margin: calc(5 * var(--gap-size)) auto;
 	}
 
-/* game-actions */
+/*** game-actions ***/
 	#game-actions {
 		background: var(--medium-blue);
 		border-top: var(--border-size) solid var(--dark-gray);
@@ -348,7 +347,7 @@
 		box-sizing: border-box;
 	}
 
-/* stats */
+/*** stats ***/
 	.stat {
 		display: block;
 		width: 100%;
@@ -376,7 +375,7 @@
 		text-align: right;
 	}
 
-/* games */
+/*** game history ***/
 	#game-history {
 		background: var(--light-gray);
 	}

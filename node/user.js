@@ -13,11 +13,11 @@
 			try {
 				// validate
 					if (!REQUEST.post.name || !CONSTANTS.userNameRegex.test(REQUEST.post.name.trim())) {
-						callback({success: false, message: `name must be 8 - 16 numbers, letters, and underscores`})
+						callback({success: false, message: `name must be ${CONSTANTS.userNameMinimum} - ${CONSTANTS.userNameMaximum} numbers, letters, and underscores`})
 						return
 					}
 					if (!REQUEST.post.password || !REQUEST.post.password.trim().length || !CONSTANTS.passwordRegex.test(REQUEST.post.password)) {
-						callback({success: false, message: `password must be 8 - 64 characters`})
+						callback({success: false, message: `password must be ${CONSTANTS.passwordMinimum} - ${CONSTANTS.passwordMaximum} characters`})
 						return
 					}
 
@@ -82,11 +82,11 @@
 			try {
 				// validate
 					if (!REQUEST.post.name || !CONSTANTS.userNameRegex.test(REQUEST.post.name.trim())) {
-						callback({success: false, message: `name must be 8 - 16 numbers, letters, and underscores`})
+						callback({success: false, message: `name must be ${CONSTANTS.userNameMinimum} - ${CONSTANTS.userNameMaximum} numbers, letters, and underscores`})
 						return
 					}
 					if (!REQUEST.post.password || !REQUEST.post.password.trim().length || !CONSTANTS.passwordRegex.test(REQUEST.post.password)) {
-						callback({success: false, message: `password must be 8 - 64 characters`})
+						callback({success: false, message: `password must be ${CONSTANTS.passwordMinimum} - ${CONSTANTS.passwordMaximum} characters`})
 						return
 					}
 
@@ -199,7 +199,7 @@
 
 				// validate
 					if (!REQUEST.post.name || !CONSTANTS.userNameRegex.test(REQUEST.post.name.trim())) {
-						callback({success: false, message: `name must be 8 - 16 numbers, letters, and underscores`})
+						callback({success: false, message: `name must be ${CONSTANTS.userNameMinimum} - ${CONSTANTS.userNameMaximum} numbers, letters, and underscores`})
 						return
 					}
 
@@ -260,11 +260,11 @@
 
 				// validate
 					if (!REQUEST.post.oldPassword || !REQUEST.post.oldPassword.trim().length || !CONSTANTS.passwordRegex.test(REQUEST.post.oldPassword)) {
-						callback({success: false, message: `previous password must be 8 - 64 characters`})
+						callback({success: false, message: `previous password must be ${CONSTANTS.passwordMinimum} - ${CONSTANTS.passwordMaximum} characters`})
 						return
 					}
 					if (!REQUEST.post.newPassword || !REQUEST.post.newPassword.trim().length || !CONSTANTS.passwordRegex.test(REQUEST.post.newPassword)) {
-						callback({success: false, message: `new password must be 8 - 64 characters`})
+						callback({success: false, message: `new password must be ${CONSTANTS.passwordMinimum} - ${CONSTANTS.passwordMaximum} characters`})
 						return
 					}
 
@@ -349,7 +349,7 @@
 
 				// validate
 					if (!REQUEST.post.password || !REQUEST.post.password.trim().length || !CONSTANTS.passwordRegex.test(REQUEST.post.password)) {
-						callback({success: false, message: `password must be 8 - 64 characters`})
+						callback({success: false, message: `password must be ${CONSTANTS.passwordMinimum} - ${CONSTANTS.passwordMaximum} characters`})
 						return
 					}
 

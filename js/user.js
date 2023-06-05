@@ -235,7 +235,7 @@
 		function submitJoinGame(event) {
 			try {
 				// get gameid
-					const gameId = ELEMENTS["join-gameid-input"]?.value.trim() || null
+					const gameId = ELEMENTS["join-gameid-input"]?.value.trim().toLowerCase() || null
 					if (!gameId || !gameId.length) {
 						showToast({success: false, message: "enter a game id"})
 						return

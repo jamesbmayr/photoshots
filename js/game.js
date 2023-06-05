@@ -8,10 +8,14 @@
 
 	/* elements */
 		const ELEMENTS = {
+			"body": document.querySelector("body"),
+			"nav-bar-name": document.querySelector("#nav-bar-name"),
 			"quit-game-button": document.querySelector("#quit-game-button"),
 			"game-actions-inner": document.querySelector("#game-actions-inner"),
 			"delete-game-button": document.querySelector("#delete-game-button"),
 			"start-game-button": document.querySelector("#start-game-button"),
+			"hide-info-button": document.querySelector("#hide-info-button"),
+			"qr-code": document.querySelector("#qr-code"),
 			"qr-code-container": document.querySelector("#qr-code-container"),
 			"game-state-indicator": document.querySelector("#game-state-indicator"),
 			"game-mode-select": document.querySelector("#game-mode-select"),
@@ -19,7 +23,13 @@
 			"game-mode-end-condition": document.querySelector("#game-mode-end-condition"),
 			"players-list": document.querySelector("#players-list"),
 			"players-list-items": Array.from(document.querySelectorAll(".player")),
-			"players-ban-buttons": Array.from(document.querySelectorAll(".player-ban"))
+			"players-ban-buttons": Array.from(document.querySelectorAll(".player-ban")),
+			"gameplay": document.querySelector("#gameplay"),
+			"gameplay-status": document.querySelector("#gameplay-status"),
+			"gameplay-target": document.querySelector("#gameplay-target"),
+			"gameplay-center": document.querySelector("#gameplay-center"),
+			"gameplay-time-remaining": document.querySelector("#gameplay-time-remaining"),
+			"show-info-button": document.querySelector("#show-info-button")
 		}
 
 	/* state */
@@ -28,7 +38,7 @@
 			captureWaitTimeout: null,
 			captureWaitMS: 2000, // ms
 			game: {
-				id: ELEMENTS["qr-code-container"].innerText.trim(),
+				id: ELEMENTS["nav-bar-name"]?.querySelector("span").innerText.trim(),
 				ownerId:       null,
 				mode:          {},
 				timeStart:     0,
@@ -233,7 +243,10 @@
 		function displayGameQRCode() {
 			try {
 				// get gameId
-					const gameId = ELEMENTS["qr-code-container"].innerHTML
+					const gameId = ELEMENTS["qr-code-container"]?.innerHTML
+					if (!gameId) {
+						return
+					}
 
 				// generate code
 					displayQRCode(gameId, ELEMENTS["qr-code-container"])
@@ -268,9 +281,13 @@
 						if (data.timeEnd !== STATE.game.timeEnd) {
 							STATE.game.timeEnd = data.timeEnd
 							ELEMENTS["quit-game-button"]?.remove()
+							ELEMENTS["start-game-button"]?.remove()
 							ELEMENTS["delete-game-button"]?.remove()
+							ELEMENTS["hide-info-button"]?.remove()
+							ELEMENTS["qr-code"]?.remove()
 							ELEMENTS["players-ban-buttons"]?.forEach(element => element.remove())
 							ELEMENTS["game-state-indicator"].innerHTML = `ended ${new Date(STATE.game.timeEnd).toLocaleString()}`
+							ELEMENTS["body"].removeAttribute("gameplay")
 							stopScanning()
 						}
 
@@ -279,13 +296,18 @@
 							STATE.game.timeStart = data.timeStart
 							ELEMENTS["game-mode-select"]?.setAttribute("disabled", true)
 							ELEMENTS["start-game-button"]?.remove()
+							ELEMENTS["delete-game-button"]?.remove()
+							ELEMENTS["qr-code"]?.remove()
+							ELEMENTS["body"].setAttribute("gameplay", true)
 							startScanning()
 						}
 
 					// remaining
 						if (data.timeRemaining) {
 							STATE.game.timeRemaining = data.timeRemaining
-							ELEMENTS["game-state-indicator"].innerHTML = convertTime(STATE.game.timeRemaining)
+							const timeRemainingString = convertTime(STATE.game.timeRemaining)
+							ELEMENTS["gameplay-time-remaining"].innerHTML = timeRemainingString
+							ELEMENTS["game-state-indicator"].innerHTML = timeRemainingString
 						}
 
 				// players
@@ -304,8 +326,6 @@
 							// display
 								displayPlayer(STATE.game.players[playerId])
 						}
-
-					
 			} catch (error) {console.log(error)}
 		}
 	
@@ -320,15 +340,6 @@
 				// message
 					showToast({success: true, message: `you are game owner`})
 
-				// delete game button
-					if (!STATE.game.timeEnd && !ELEMENTS["delete-game-button"]) {
-						ELEMENTS["delete-game-button"] = document.createElement("button")
-						ELEMENTS["delete-game-button"].id = "delete-game-button"
-						ELEMENTS["delete-game-button"].innerHTML = "delete game"
-						ELEMENTS["delete-game-button"].addEventListener(TRIGGERS.click, deleteGame)
-						ELEMENTS["game-actions-inner"].appendChild(ELEMENTS["delete-game-button"])
-					}
-
 				// start game button
 					if (!STATE.game.timeStart && !ELEMENTS["start-game-button"]) {
 						ELEMENTS["start-game-button"] = document.createElement("button")
@@ -336,6 +347,15 @@
 						ELEMENTS["start-game-button"].innerHTML = "start game"
 						ELEMENTS["start-game-button"].addEventListener(TRIGGERS.click, startGame)
 						ELEMENTS["game-actions-inner"].appendChild(ELEMENTS["start-game-button"])
+					}
+
+				// delete game button
+					if (!STATE.game.timeEnd && !ELEMENTS["delete-game-button"]) {
+						ELEMENTS["delete-game-button"] = document.createElement("button")
+						ELEMENTS["delete-game-button"].id = "delete-game-button"
+						ELEMENTS["delete-game-button"].innerHTML = "cancel game"
+						ELEMENTS["delete-game-button"].addEventListener(TRIGGERS.click, deleteGame)
+						ELEMENTS["game-actions-inner"].appendChild(ELEMENTS["delete-game-button"])
 					}
 
 				// game mode select
@@ -374,17 +394,31 @@
 	/* displayPlayer */
 		function displayPlayer(player) {
 			try {
-				// playerId
+				// no player?
+					if (!player) {
+						return
+					}
+
+				// player info
 					const status = STATE.game.timeEnd ? (player.win ? "win" : player.loss ? "loss" : "unknown") :
 								   !player.connected ? "disconnected" :
 								   STATE.game.timeStart ? (player.cooldown ? `stunned (${player.cooldown})` : (player.target ? "in" : "out")) :
 								   "ready"
+					const target = player.target ? (STATE.game.players[player.target]?.name || "?") : "-"
+
+				// self?
+					if (player.userId == STATE.playerId) {
+						ELEMENTS["gameplay-status"].innerHTML = status
+						ELEMENTS["gameplay-target"].innerHTML = `&target;<br>${target == "-" ? 
+							Object.keys(STATE.game.players).filter(id => id !== player.userId && STATE.game.players[id].target).map(id => STATE.game.players[id].name).join("<br>") || "-" :
+							target}`
+					}
 
 				// existing playerElement
 					const playerElement = ELEMENTS["players-list-items"].find(element => element.id == `player-${player.userId}`)
 					if (playerElement) {
 						playerElement.querySelector(".player-status").innerHTML = status
-						playerElement.querySelector(".player-stat-target").innerHTML = player.target ? (STATE.game.players[player.target]?.name || "?") : "-"
+						playerElement.querySelector(".player-stat-target").innerHTML = target
 						playerElement.querySelector(".player-stat-shots").innerHTML = player.shots
 						playerElement.querySelector(".player-stat-stuns").innerHTML = player.stuns
 						playerElement.querySelector(".player-stat-time-in").innerHTML = convertTime(player.timeIn)
@@ -503,6 +537,11 @@
 		ELEMENTS["delete-game-button"]?.addEventListener(TRIGGERS.click, deleteGame)
 		function deleteGame(event) {
 			try {
+				// confirm
+					if (!window.confirm("Are you sure you want to delete this game?")) {
+						return
+					}
+
 				// data
 					const data = {
 						action: "deleteGame"
@@ -546,6 +585,20 @@
 		ELEMENTS["players-ban-buttons"]?.forEach(button => button.addEventListener(TRIGGERS.click, banPlayer))
 		function banPlayer(event) {
 			try {
+				// id
+					const id = event.target.value
+					const name = STATE.game.players[id]?.name
+
+				// not here
+					if (!name) {
+						showToast({success: false, message: "player not found"})
+					}
+
+				// confirm
+					if (!window.confirm(`Are you sure you want to ban ${name}?`)) {
+						return
+					}
+
 				// data
 					const data = {
 						action: "banPlayer",
@@ -562,6 +615,11 @@
 		ELEMENTS["quit-game-button"]?.addEventListener(TRIGGERS.click, quitGame)
 		function quitGame(event) {
 			try {
+				// confirm
+					if (!window.confirm("Are you sure you want to leave?")) {
+						return
+					}
+
 				// data
 					const data = {
 						action: "quitGame"
@@ -594,6 +652,24 @@
 			} catch (error) {console.log(error)}
 		}
 
+	/* hideInfo */
+		ELEMENTS["hide-info-button"]?.addEventListener(TRIGGERS.click, hideInfo)
+		function hideInfo(event) {
+			try {
+				// activate
+					ELEMENTS["body"].setAttribute("gameplay", true)
+			} catch (error) {console.log(error)}
+		}
+
+	/* showInfo */
+		ELEMENTS["show-info-button"]?.addEventListener(TRIGGERS.click, showInfo)
+		function showInfo(event) {
+			try {
+				// inactivate
+					ELEMENTS["body"].removeAttribute("gameplay")
+			} catch (error) {console.log(error)}
+		}
+
 /*** qr code reader ***/
 	/* startScanning */
 		function startScanning(event) {
@@ -614,7 +690,7 @@
 							const readerElement = document.createElement("div")
 								readerElement.id = "qr-code-reader-area"
 							ELEMENTS["qr-code-reader-area"] = readerElement
-							document.body.appendChild(readerElement)
+							ELEMENTS["gameplay-center"].appendChild(readerElement)
 
 						// create reader
 							ELEMENTS["qr-code-reader"] = new Html5Qrcode(readerElement.id)

@@ -1,4 +1,4 @@
-/* elements */
+/*** elements ***/
 	html, body {
 		position: absolute;
 		top: 0;
@@ -136,7 +136,7 @@
 		color: var(--dark-gray);
 	}
 
-/* toast */
+/*** toast ***/
 	#toast {
 		position: fixed;
 		top: calc(2 * var(--gap-size));
@@ -202,7 +202,7 @@
 		user-select: none;
 	}
 
-/* user-actions */
+/*** user-actions ***/
 	#user-actions {
 		background: var(--medium-blue);
 	}
@@ -231,7 +231,7 @@
 		border-radius: 0 var(--border-radius) var(--border-radius) 0 !important;
 	}
 
-/* game-actions */
+/*** game-actions ***/
 	#game-actions {
 		background: var(--medium-blue);
 	}
@@ -276,7 +276,7 @@
 		text-transform: uppercase;
 	}
 
-/* about */
+/*** about ***/
 	#about {
 		height: calc(100vh - (8 * var(--font-size) + 15 * var(--gap-size)) - (6 * var(--gap-size) + 2 * (var(--font-size) + 3 * var(--gap-size))));
 		overflow-x: hidden;

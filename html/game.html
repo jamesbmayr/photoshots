@@ -18,21 +18,29 @@
 					`<button id="quit-game-button">quit</button>`
 				}
 			</script node>
-			<h1 id="nav-bar-name">&#128247; <script node>REQUEST.game.id</script node></h1>
+			<h1 id="nav-bar-name">&#128247; <span><script node>REQUEST.game.id</script node></span></h1>
 		</section>
 		<section id="game-actions">
 			<div id="game-actions-inner"><script node>
 				if (!REQUEST.game.timeStart && REQUEST.session.userId && REQUEST.game.ownerId == REQUEST.session.userId) {
 					`<button id="start-game-button">start game</button>` +
-					`<button id="delete-game-button">delete game</button>`
+					`<button id="delete-game-button">cancel game</button>`
+				}
+			</script node><script node>
+				if (REQUEST.game.timeStart && !REQUEST.game.timeEnd && REQUEST.session.userId && REQUEST.game.players[REQUEST.session.userId]) {
+					`<button id="hide-info-button">back to gameplay</button>`
 				}
 			</script node></div>
 		</section>
-		<section id="qr-code">
-			<div id="qr-code-inner">
-				<div id="qr-code-container"><script node>REQUEST.game.id</script node></div>
-			</div>
-		</section>
+		<script node>
+			if (!REQUEST.game.timeStart) {
+				`<section id="qr-code">` +
+					`<div id="qr-code-inner">` +
+						`<div id="qr-code-container">${REQUEST.game.id}</div>` +
+					`</div>` +
+				`</section>`
+			}
+		</script node>
 		<section id="game-info">
 			<div id="game-info-inner">
 				<h3 id="game-state-indicator"><script node>
@@ -92,6 +100,20 @@
 				</script node></div>
 			</div>
 		</section>
-		<div id="reader"></div>
+		<div id="gameplay">
+			<div id="gameplay-left">
+				<div id="gameplay-left-inner">
+					<div id="gameplay-target"></div>
+				</div>
+			</div>
+			<div id="gameplay-center"></div>
+			<div id="gameplay-right">
+				<div id="gameplay-right-inner">
+					<div id="gameplay-status"></div>
+					<button id="show-info-button">all info</button>
+					<div id="gameplay-time-remaining"></div>
+				</div>
+			</div>
+		</div>
 	</body>
 </html>

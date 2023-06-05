@@ -402,11 +402,14 @@
 					// constants
 						case "constants":
 							return {
-								userPathRegex: /^\/user\/[a-zA-Z0-9_]{8,16}$/,
-								userNameRegex: /^[a-zA-Z0-9_]{8,16}$/,
-								userNameLength: 16, // characters
+								userPathRegex: /^\/user\/[a-zA-Z0-9_]{4,8}$/,
+								userNameRegex: /^[a-zA-Z0-9_]{4,8}$/,
+								userNameMinimum: 4, // characters
+								userNameMaximum: 8, // characters
 								userNameFillCharacter: " ",
 								passwordRegex: /^.{8,64}$/,
+								passwordMinimum: 8, // characters
+								passwordMaximum: 64, // characters
 								gamePathRegex: /^\/game\/[a-z]{8}$/,
 								idSet: "abcdefghijklmnopqrstuvwxyz",
 								idLength: 8, // characters

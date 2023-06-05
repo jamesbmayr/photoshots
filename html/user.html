@@ -19,7 +19,7 @@
 					`<button id="logout-user-button">logout</button>`
 				}
 			</script node>
-			<h1 id="nav-bar-name">&#128100; <script node>REQUEST.user.name</script node></h1>
+			<h1 id="nav-bar-name">&#128100; <span><script node>REQUEST.user.name</script node></span></h1>
 		</section>
 		<script node>
 			if (REQUEST.session.userId && REQUEST.user.id == REQUEST.session.userId) {
@@ -27,16 +27,16 @@
 					`<div id="user-actions-inner">` +
 						`<h2>user info</h2>` +
 						`<div id="password-action">` +
-							`<input id="old-password-input" type="password" placeholder="old password">` + 
-							`<input id="new-password-input" type="password" placeholder="new password">` + 
+							`<input id="old-password-input" type="password" placeholder="old password" spellcheck="false" autocomplete="off" autocapitalize="off">` + 
+							`<input id="new-password-input" type="password" placeholder="new password" spellcheck="false" autocomplete="off" autocapitalize="off">` + 
 							`<button id="update-password-button">change</button>` +
 						`</div>` +
 						`<div id="username-action">` +
-							`<input id="update-username-input" type="text" placeholder="username">` +
+							`<input id="update-username-input" type="text" placeholder="username" spellcheck="false" autocomplete="off" autocapitalize="off">` +
 							`<button id="update-username-button">change name</button>` +
 						`</div>` +
 						`<div id="delete-action">` +
-							`<input id="delete-password-input" type="password" placeholder="password">` +
+							`<input id="delete-password-input" type="password" placeholder="password" spellcheck="false" autocomplete="off" autocapitalize="off">` +
 							`<button id="delete-user-button">delete user</button>` +
 						`</div>` +
 					`</div>` +
@@ -68,7 +68,7 @@
 						) : (
 							`<div id="join-action">` +
 								`<button id="join-camera-button">scan</button>` +
-								`<input id="join-gameid-input" type="text" placeholder="game code">` +
+								`<input id="join-gameid-input" type="text" placeholder="game code" spellcheck="false" autocomplete="off" autocapitalize="off">` +
 								`<button id="join-game-button">join</button>` +
 							`</div>` +
 							`<div id="create-action">` +
