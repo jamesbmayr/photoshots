@@ -526,7 +526,9 @@
 				// loop through recipients
 					for (const recipient of recipients) {
 						try {
-							CONNECTIONS[recipient]?.sendUTF(stringifiedData)
+							if (CONNECTIONS[recipient]) {
+								CONNECTIONS[recipient].sendUTF(stringifiedData)
+							}
 						} catch (error) {CORE.logError(error)}
 					}
 			}
