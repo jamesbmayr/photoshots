@@ -710,16 +710,8 @@
 								query.document = {
 									updated: new Date().getTime(),
 									timeStart: new Date().getTime(),
-									timeRemaining: CONSTANTS.gameSeconds
+									timeRemaining: CONSTANTS.gameSeconds + CONSTANTS.pregameSeconds
 								}
-
-						// targeting
-							const shuffledIds = CORE.sortRandom(Object.keys(game.players))
-							for (let i = 0; i < shuffledIds.length; i++) {
-								const thisPlayerId = shuffledIds[i]
-								const targetPlayerId = shuffledIds[i + 1] ? shuffledIds[i + 1] : shuffledIds[0]
-								query.document[`players.${thisPlayerId}.target`] = targetPlayerId
-							}
 
 						// update
 							CORE.accessDatabase(query, results => {
@@ -794,6 +786,12 @@
 								return
 							}
 
+						// time started is more than game length
+							if (game.timeRemaining > CONSTANTS.gameSeconds) {
+								callback({success: false, message: `starting countdown`, recipients: [REQUEST.session.userId]})
+								return
+							}
+
 						// self not in game
 							if (!game.players[REQUEST.session.userId]) {
 								callback({success: false, message: `not playing this game`, recipients: [REQUEST.session.userId]})
@@ -850,7 +848,7 @@
 									[`players.${opponentPlayer.userId}.stuns`]: opponentPlayer.stuns + 1,
 									[`players.${opponentPlayer.userId}.target`]: null,
 									[`players.${selfPlayer.userId}.shots`]: selfPlayer.shots + 1,
-									[`players.${selfPlayer.userId}.target`]: opponentPlayer.target // ???
+									[`players.${selfPlayer.userId}.target`]: opponentPlayer.target == selfPlayer.userId ? "[none]" : opponentPlayer.target
 								}
 								if (opponentTargeterId && opponentTargeterId !== selfPlayer.userId) {
 									query.document[`players.${opponentTargeterId}.target`] = selfPlayer.userId
@@ -947,12 +945,12 @@
 							}
 
 						// time's up?
-							if (endOne(game, callback)) {
+							if (game.timeRemaining < CONSTANTS.gameSeconds && endOne(game, callback)) {
 								return
 							}
 
 						// early victory?
-							if (winOne(game, callback)) {
+							if (game.timeRemaining < CONSTANTS.gameSeconds && winOne(game, callback)) {
 								return
 							}
 
@@ -966,26 +964,38 @@
 									timeRemaining: game.timeRemaining - 1, // s
 								}
 
-						// players
-							for (const playerId in game.players) {
-								// disconnected
-									const player = game.players[playerId]
-									if (!player.connected) {
-										continue
-									}
+						// pregame --> targeting
+							if (game.timeRemaining == CONSTANTS.gameSeconds) {
+								const shuffledIds = CORE.sortRandom(Object.keys(game.players))
+								for (let i = 0; i < shuffledIds.length; i++) {
+									const thisPlayerId = shuffledIds[i]
+									const targetPlayerId = shuffledIds[i + 1] ? shuffledIds[i + 1] : shuffledIds[0]
+									query.document[`players.${thisPlayerId}.target`] = targetPlayerId
+								}
+							}
 
-								// cooldown
-									else if (player.cooldown) {
-										query.document[`players.${playerId}.cooldown`] = Math.max(0, player.cooldown - 1)
-									}
+						// in-game --> players
+							else if (game.timeRemaining < CONSTANTS.gameSeconds) {
+								for (const playerId in game.players) {
+									// disconnected
+										const player = game.players[playerId]
+										if (!player.connected) {
+											continue
+										}
 
-								// in or out?
-									else if (player.target) {
-										query.document[`players.${playerId}.timeIn`] = player.timeIn + 1
-									}
-									else {
-										query.document[`players.${playerId}.timeOut`] = player.timeOut + 1
-									}
+									// cooldown
+										else if (player.cooldown) {
+											query.document[`players.${playerId}.cooldown`] = Math.max(0, player.cooldown - 1)
+										}
+
+									// in or out?
+										else if (player.target) {
+											query.document[`players.${playerId}.timeIn`] = player.timeIn + 1
+										}
+										else {
+											query.document[`players.${playerId}.timeOut`] = player.timeOut + 1
+										}
+								}
 							}
 
 						// update
@@ -1126,7 +1136,7 @@
 						// ten_minutes_in
 							case "ten_minutes_in":
 								const tenMinInId = Object.keys(game.players).find(playerId => {
-									return (game.players[playerId].timeIn - game.players[playerId].timeOut > 10 * 60) // s
+									return (game.players[playerId].timeIn - game.players[playerId].timeOut >= 10 * 60) // s
 								}) || null
 								if (!tenMinInId) {
 									return false
@@ -1139,7 +1149,7 @@
 						// straight_shooter
 							case "straight_shooter":
 								const shooterId = Object.keys(game.players).find(playerId => {
-									return (game.players[playerId].shots - game.players[playerId].stuns > 8) // shots
+									return (game.players[playerId].shots - game.players[playerId].stuns >= 8) // shots
 								}) || null
 								if (!shooterId) {
 									return false

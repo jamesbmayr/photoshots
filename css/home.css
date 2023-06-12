@@ -52,7 +52,7 @@
 		text-transform: uppercase;
 		outline: none;
 		user-select: none;
-		margin: calc(3 * var(--gap-size)) 0 calc(3 * var(--gap-size)) 0;
+		margin: calc(9 * var(--gap-size)) 0 calc(3 * var(--gap-size)) 0;
 	}
 
 	a, a:visited {
@@ -288,4 +288,12 @@
 		color: var(--light-gray);
 		padding-bottom: calc(20 * var(--gap-size));
 		text-align: left;
+	}
+
+	#about-overview {
+		text-align: center;
+	}
+
+	#about li {
+		margin-bottom: var(--gap-size);
 	}

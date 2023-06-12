@@ -416,6 +416,7 @@
 								minPlayers: 3, // players
 								maxPlayers: 16, // players
 								gameLoopInterval: 1000, // ms
+								pregameSeconds: 10, // s
 								stunCooldown: 30, // s
 								gameSeconds: 15 * 60, // s
 								gameModes: {
@@ -446,11 +447,22 @@
 									"one_stun_done": {
 										name: "one stun done",
 										winCondition: "Last player to be stunned wins after each other player is stunned.",
-										endCondition: "If no one wins after 15 minutes, most shots - stuns wins.",
-										endStats: ["shots", "stuns"]
+										endCondition: "If no one wins after 15 minutes, most shots wins.",
+										endStats: ["shots"]
 									}
 								},
 								gameMessages: {
+									[`_${15 * 60 + 10}`]: `10`,
+									[`_${15 * 60 + 9}`]: `9`,
+									[`_${15 * 60 + 8}`]: `8`,
+									[`_${15 * 60 + 7}`]: `7`,
+									[`_${15 * 60 + 6}`]: `6`,
+									[`_${15 * 60 + 5}`]: `5`,
+									[`_${15 * 60 + 4}`]: `4`,
+									[`_${15 * 60 + 3}`]: `3`,
+									[`_${15 * 60 + 2}`]: `2`,
+									[`_${15 * 60 + 1}`]: `1`,
+									[`_${15 * 60}`]: `begin!`,
 									[`_${5 * 60}`]: `5 minutes remaining`,
 									[`_${1 * 60}`]: `1 minute remaining`,
 									[`_${5}`]: `5`,

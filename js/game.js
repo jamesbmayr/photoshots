@@ -299,6 +299,13 @@
 							ELEMENTS["delete-game-button"]?.remove()
 							ELEMENTS["qr-code"]?.remove()
 							ELEMENTS["body"].setAttribute("gameplay", true)
+
+							ELEMENTS["hide-info-button"] = document.createElement("button")
+							ELEMENTS["hide-info-button"].id = "hide-info-button"
+							ELEMENTS["hide-info-button"].innerHTML = "back to gameplay"
+							ELEMENTS["hide-info-button"].addEventListener(TRIGGERS.click, hideInfo)
+							ELEMENTS["game-actions-inner"].appendChild(ELEMENTS["hide-info-button"])
+
 							startScanning()
 						}
 
@@ -404,13 +411,13 @@
 								   !player.connected ? "disconnected" :
 								   STATE.game.timeStart ? (player.cooldown ? `stunned (${player.cooldown})` : (player.target ? "in" : "out")) :
 								   "ready"
-					const target = player.target ? (STATE.game.players[player.target]?.name || "?") : "-"
+					const target = player.target ? (STATE.game.players[player.target]?.name || player.target) : "[any]"
 
 				// self?
 					if (player.userId == STATE.playerId) {
 						ELEMENTS["gameplay-status"].innerHTML = status
-						ELEMENTS["gameplay-target"].innerHTML = `&target;<br>${target == "-" ? 
-							Object.keys(STATE.game.players).filter(id => id !== player.userId && STATE.game.players[id].target).map(id => STATE.game.players[id].name).join("<br>") || "-" :
+						ELEMENTS["gameplay-target"].innerHTML = `&target;<br>${target == "[any]" ? 
+							Object.keys(STATE.game.players).filter(id => id !== player.userId && STATE.game.players[id].target).map(id => STATE.game.players[id].name).join("<br>") || "[any]" :
 							target}`
 					}
 
@@ -474,7 +481,7 @@
 						playerTarget.appendChild(playerTargetLabel)
 						const playerTargetValue = document.createElement("span")
 							playerTargetValue.className = "player-stat-target"
-							playerTargetValue.innerHTML = player.target ? (STATE.game.players[player.target]?.name || "?") : "-"
+							playerTargetValue.innerHTML = player.target ? (STATE.game.players[player.target]?.name || player.target) : "[any]"
 						playerTarget.appendChild(playerTargetValue)
 
 				// shots
@@ -635,9 +642,8 @@
 			try {
 				// name --> id
 					const name = text.trim()
-					const playerId = Object.keys(STATE.game.players).find(playerId => STATE.game.players[playerId].name == name)
+					const playerId = Object.keys(STATE.game.players).find(playerId => STATE.game.players[playerId]?.name == name)
 					if (!playerId) {
-						showToast({success: false, message: `unknown player`})
 						return
 					}
 

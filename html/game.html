@@ -26,10 +26,6 @@
 					`<button id="start-game-button">start game</button>` +
 					`<button id="delete-game-button">cancel game</button>`
 				}
-			</script node><script node>
-				if (REQUEST.game.timeStart && !REQUEST.game.timeEnd && REQUEST.session.userId && REQUEST.game.players[REQUEST.session.userId]) {
-					`<button id="hide-info-button">back to gameplay</button>`
-				}
 			</script node></div>
 		</section>
 		<script node>
@@ -77,7 +73,7 @@
 								`<h4 class="player-status">${status}</h4>` +
 								`<li class="player-stat">` +
 									`<span>target</span>` +
-									`<span class="player-stat-target">${player.target ? REQUEST.game.players[player.target].name : "-"}<span>` +
+									`<span class="player-stat-target">${player.target ? (REQUEST.game.players[player.target]?.name || player.target) : "[any]"}<span>` +
 								`</li>` +
 								`<li class="player-stat">` +
 									`<span>shots</span>` +

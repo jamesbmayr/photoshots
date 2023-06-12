@@ -1,5 +1,5 @@
 # PhotoShots
-## photography hide and seek
+## photography hide and seek - phone tag reimagined
 
 https://jamesmayr.com/photoshots
 
@@ -25,6 +25,8 @@ PhotoShots
 |   |- game.js
 |   |- home.js
 |   |- user.js
+|   |- qrcode-generator.js (https://github.com/davidshimjs/qrcodejs)
+|   |- qrcode-reader.js (https://github.com/mebjas/html5-qrcode)
 |
 |- css
 |   |- game.css
