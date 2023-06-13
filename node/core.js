@@ -319,7 +319,7 @@
 							return `<link rel="shortcut icon" href="logo.png"/>`
 						break
 						case "description":
-							return `photography hide and seek`
+							return `photography hide and seek - phone tag reimagined`
 						break
 						case "meta":
 							const title = getAsset("title")

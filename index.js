@@ -76,7 +76,7 @@
 					if (REQUEST.method == "GET") {
 						switch (true) {
 							// ping
-								case (/^\/ping\/?$/).test(REQUEST.url):
+								case ("/ping" == REQUEST.path.join("/")):
 									try {
 										RESPONSE.writeHead(200, {"Content-Type": `application/json`})
 										RESPONSE.end(JSON.stringify({success: true, timestamp: new Date().getTime()}))

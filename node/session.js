@@ -125,25 +125,64 @@
 						return
 					}
 
-				// query
-					const query = CORE.getSchema("query")
-						query.collection = "sessions"
-						query.command = "update"
-						query.filters = {id: sessionId}
-						query.document = {
-							updated: new Date().getTime(),
-							userId: userId
-						}
+				// logging out
+					if (!userId) {
+						// query
+							const query = CORE.getSchema("query")
+								query.collection = "sessions"
+								query.command = "update"
+								query.filters = {id: sessionId}
+								query.document = {
+									updated: new Date().getTime(),
+									userId: null
+								}
 
-				// update
-					CORE.accessDatabase(query, results => {
-						if (!results.success) {
-							callback({success: false, message: `unable to set user id`})
-							return
-						}
+						// update
+							CORE.accessDatabase(query, results => {
+								if (!results.success) {
+									callback({success: false, message: `unable to clear user id`})
+									return
+								}
 
-						callback({success: true})
-					})
+								callback({success: true})
+							})
+
+						return
+					}
+
+				// logging in --> log out others first
+					// query
+						const query = CORE.getSchema("query")
+							query.collection = "sessions"
+							query.command = "update"
+							query.filters = {userId: userId}
+							query.document = {
+								updated: new Date().getTime(),
+								userId: null
+							}
+
+					// update
+						CORE.accessDatabase(query, results => {
+							// query
+								const query = CORE.getSchema("query")
+									query.collection = "sessions"
+									query.command = "update"
+									query.filters = {id: sessionId}
+									query.document = {
+										updated: new Date().getTime(),
+										userId: userId
+									}
+
+							// update
+								CORE.accessDatabase(query, results => {
+									if (!results.success) {
+										callback({success: false, message: `unable to set user id`})
+										return
+									}
+
+									callback({success: true})
+								})
+						})
 			}
 			catch (error) {
 				CORE.logError(error)
